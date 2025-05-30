@@ -115,7 +115,7 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
       } else if (activeSection === 0) {
         // Default content for first section
         setEditorContent(
-          "The Downtown Revitalization Project aims to transform the city center of Oakridge into a vibrant, safe, and accessible community hub. The project will address critical infrastructure needs while promoting economic growth and community engagement."
+          "The City of New Bedford faces significant traffic safety challenges in high-crash areas that disproportionately impact vulnerable road users and disadvantaged communities. Our comprehensive analysis of crash data from MassDOT reveals concerning patterns of serious injuries and fatalities concentrated in specific corridors, particularly affecting pedestrians and cyclists in areas with limited safety infrastructure. Through detailed examination of high-risk road types and crash cluster mapping, we have identified priority intervention locations where targeted, cost-effective safety improvements can deliver maximum impact. This data-driven approach ensures resources are deployed where they will save the most lives and prevent the most serious injuries."
         );
       } else {
         setEditorContent("");
@@ -180,7 +180,7 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
     const newContent =
       "This is a regenerated draft for the " +
       section.name +
-      " section. \n\nOur project addresses the critical infrastructure needs in downtown Oakridge. The current sidewalks and lighting systems are over 30 years old and have deteriorated significantly, causing safety concerns for pedestrians.\n\nStatistical data from our recent community survey shows that 68% of residents avoid downtown after dark due to poor lighting, and local businesses report a 22% decline in evening revenue compared to five years ago.";
+      " section. \n\n The City of New Bedford faces significant traffic safety challenges in high-crash areas that disproportionately impact vulnerable road users and disadvantaged communities. Our comprehensive analysis of crash data from MassDOT reveals concerning patterns of serious injuries and fatalities concentrated in specific corridors, particularly affecting pedestrians and cyclists in areas with limited safety infrastructure. Through detailed examination of high-risk road types and crash cluster mapping, we have identified priority intervention locations where targeted, cost-effective safety improvements can deliver maximum impact. This data-driven approach ensures resources are deployed where they will save the most lives and prevent the most serious injuries.";
 
     setEditorContent(newContent);
 

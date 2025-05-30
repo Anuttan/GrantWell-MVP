@@ -109,7 +109,7 @@ const ProjectBasics: React.FC<ProjectBasicsProps> = ({
                 borderRadius: "6px",
                 fontSize: "16px",
               }}
-              placeholder="Downtown Revitalization Project"
+              placeholder="Project Name"
             />
             <span
               style={{
@@ -306,7 +306,7 @@ const ProjectBasics: React.FC<ProjectBasicsProps> = ({
                 borderRadius: "6px",
                 fontSize: "16px",
               }}
-              placeholder="jsmith@oakridge.gov"
+              placeholder="jsmith@mass.gov"
             />
           </div>
         </div>

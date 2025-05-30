@@ -17,6 +17,65 @@ import Step from "@mui/material/Step";
 import StepLabel from "@mui/material/StepLabel";
 import { ApiClient } from "../../common/api-client/api-client";
 
+// Processing component
+const ProcessingDraft: React.FC = () => {
+  return (
+    <div style={{ 
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: "rgba(0, 0, 0, 0.5)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 50,
+    }}>
+      <div style={{
+        background: "white",
+        borderRadius: "12px",
+        padding: "32px",
+        textAlign: "center",
+        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+        maxWidth: "560px",
+        width: "90%",
+      }}>
+        <div style={{
+          width: "64px",
+          height: "64px",
+          margin: "0 auto 24px",
+          position: "relative",
+        }}>
+          <div style={{
+            position: "absolute",
+            width: "100%",
+            height: "100%",
+            border: "4px solid #4361ee",
+            borderRadius: "50%",
+            borderTopColor: "transparent",
+            animation: "spin 1s linear infinite",
+          }} />
+        </div>
+        <h1 style={{
+          fontSize: "28px",
+          fontWeight: 700,
+          color: "#111827",
+          marginBottom: "16px",
+        }}>
+          Processing Your Draft
+        </h1>
+        <p style={{
+          color: "#4b5563",
+          marginBottom: "24px",
+        }}>
+          We're analyzing your inputs and creating a tailored draft for your grant application. This will take just a moment...
+        </p>
+      </div>
+    </div>
+  );
+};
+
 // Types
 interface DocumentData {
   id?: string;
@@ -113,6 +172,7 @@ const DocumentEditor: React.FC = () => {
   const [nofoName, setNofoName] = useState<string>("");
   const [isNofoLoading, setIsNofoLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
   const appContext = useContext(AppContext);
   const navigate = useNavigate();
   const { sessionId } = useParams();
@@ -250,7 +310,13 @@ const DocumentEditor: React.FC = () => {
       case "uploadDocuments":
         return (
           <UploadDocuments
-            onContinue={() => navigateToStep("draftCreated")}
+            onContinue={() => {
+              setIsProcessing(true);
+              setTimeout(() => {
+                setIsProcessing(false);
+                navigateToStep("draftCreated");
+              }, 10000);
+            }}
             selectedNofo={selectedNofo}
             onNavigate={navigateToStep}
           />
@@ -330,160 +396,163 @@ const DocumentEditor: React.FC = () => {
   }
 
   return (
-    <div
-      className="document-editor-root"
-      style={{ display: "flex", minHeight: "100vh" }}
-    >
-      {currentStep !== "welcome" && (
-        <DocumentNavigation
-          documentIdentifier={selectedNofo}
-          currentStep={currentStep}
-          onNavigate={navigateToStep}
-          isOpen={sidebarOpen}
-          setIsOpen={setSidebarOpen}
-        />
-      )}
-
+    <>
+      {isProcessing && <ProcessingDraft />}
       <div
-        className="document-content"
-        style={{
-          marginLeft: currentStep !== "welcome" ? (sidebarOpen ? "240px" : "60px") : "0",
-          transition: "margin-left 0.3s ease",
-          width: currentStep !== "welcome" ? `calc(100% - ${sidebarOpen ? "240px" : "60px"})` : "100%",
-          display: "flex",
-          flexDirection: "column",
-        }}
+        className="document-editor-root"
+        style={{ display: "flex", minHeight: "100vh" }}
       >
         {currentStep !== "welcome" && (
-          <div
-            className="document-editor-header"
-            style={{
-              background: "#fff",
-              borderBottom: "0",
-              width: "100%",
-              position: "sticky",
-              top: 0,
-              zIndex: 10,
-            }}
-          >
-            <div
-              className="document-editor-header-inner"
-              style={{
-                padding: "16px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                width: "100%",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  width: "100%",
-                  marginBottom: "0",
-                }}
-              >
-                <h1
-                  className="document-editor-nofo-title"
-                  style={{
-                    marginBottom: "0",
-                    textAlign: "left",
-                    fontSize: "22px",
-                    fontWeight: "600",
-                  }}
-                >
-                  {isNofoLoading ? "Loading..." : nofoName}
-                </h1>
-              </div>
-            </div>
-          </div>
+          <DocumentNavigation
+            documentIdentifier={selectedNofo}
+            currentStep={currentStep}
+            onNavigate={navigateToStep}
+            isOpen={sidebarOpen}
+            setIsOpen={setSidebarOpen}
+          />
         )}
 
         <div
+          className="document-content"
           style={{
-            width: "100%",
-            background: "#f1f5fb",
-            borderRadius: "0",
-            padding: "20px 0",
-            marginTop: "0",
-            marginBottom: "0",
-            boxShadow: "0px 1px 2px rgba(0,0,0,0.05)",
-            position: "sticky",
-            top: "60px",
-            zIndex: 9,
+            marginLeft: currentStep !== "welcome" ? (sidebarOpen ? "240px" : "60px") : "0",
+            transition: "margin-left 0.3s ease",
+            width: currentStep !== "welcome" ? `calc(100% - ${sidebarOpen ? "240px" : "60px"})` : "100%",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          <Stepper
-            activeStep={activeStep}
-            alternativeLabel
-            sx={{
-              "& .MuiStepConnector-line": {
-                borderTopWidth: "2px",
-                borderColor: "#e2e8f0",
-              },
-              "& .MuiStepLabel-label": {
-                marginTop: "8px",
-                fontSize: "14px",
-                fontWeight: 500,
-              },
-              "& .MuiStepLabel-iconContainer": {
-                "& .MuiStepIcon-root": {
-                  width: "32px",
-                  height: "32px",
-                  color: "#e2e8f0",
-                  "&.Mui-active": {
-                    color: "#4361ee",
-                  },
-                  "&.Mui-completed": {
-                    color: "#4361ee",
-                  },
-                },
-              },
-            }}
-          >
-            {steps.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
-        </div>
-
-        <div
-          className="document-editor-workspace"
-          style={{ flex: 1, padding: currentStep === "welcome" ? "0" : "20px" }}
-        >
-          {isLoading ? (
+          {currentStep !== "welcome" && (
             <div
+              className="document-editor-header"
               style={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                height: "60vh",
+                background: "#fff",
+                borderBottom: "0",
+                width: "100%",
+                position: "sticky",
+                top: 0,
+                zIndex: 10,
               }}
             >
-              <div style={{ textAlign: "center" }}>
+              <div
+                className="document-editor-header-inner"
+                style={{
+                  padding: "16px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  width: "100%",
+                }}
+              >
                 <div
                   style={{
-                    width: "40px",
-                    height: "40px",
-                    border: "4px solid #f3f4f6",
-                    borderTopColor: "#4361ee",
-                    borderRadius: "50%",
-                    animation: "spin 1s linear infinite",
-                    margin: "0 auto 16px",
+                    display: "flex",
+                    alignItems: "center",
+                    width: "100%",
+                    marginBottom: "0",
                   }}
-                ></div>
-                <p style={{ color: "#6b7280" }}>Loading document editor...</p>
+                >
+                  <h1
+                    className="document-editor-nofo-title"
+                    style={{
+                      marginBottom: "0",
+                      textAlign: "left",
+                      fontSize: "22px",
+                      fontWeight: "600",
+                    }}
+                  >
+                    {isNofoLoading ? "Loading..." : nofoName}
+                  </h1>
+                </div>
               </div>
             </div>
-          ) : (
-            renderCurrentStep()
           )}
+
+          <div
+            style={{
+              width: "100%",
+              background: "#f1f5fb",
+              borderRadius: "0",
+              padding: "20px 0",
+              marginTop: "0",
+              marginBottom: "0",
+              boxShadow: "0px 1px 2px rgba(0,0,0,0.05)",
+              position: "sticky",
+              top: "60px",
+              zIndex: 9,
+            }}
+          >
+            <Stepper
+              activeStep={activeStep}
+              alternativeLabel
+              sx={{
+                "& .MuiStepConnector-line": {
+                  borderTopWidth: "2px",
+                  borderColor: "#e2e8f0",
+                },
+                "& .MuiStepLabel-label": {
+                  marginTop: "8px",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                },
+                "& .MuiStepLabel-iconContainer": {
+                  "& .MuiStepIcon-root": {
+                    width: "32px",
+                    height: "32px",
+                    color: "#e2e8f0",
+                    "&.Mui-active": {
+                      color: "#4361ee",
+                    },
+                    "&.Mui-completed": {
+                      color: "#4361ee",
+                    },
+                  },
+                },
+              }}
+            >
+              {steps.map((label) => (
+                <Step key={label}>
+                  <StepLabel>{label}</StepLabel>
+                </Step>
+              ))}
+            </Stepper>
+          </div>
+
+          <div
+            className="document-editor-workspace"
+            style={{ flex: 1, padding: currentStep === "welcome" ? "0" : "20px" }}
+          >
+            {isLoading ? (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: "60vh",
+                }}
+              >
+                <div style={{ textAlign: "center" }}>
+                  <div
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      border: "4px solid #f3f4f6",
+                      borderTopColor: "#4361ee",
+                      borderRadius: "50%",
+                      animation: "spin 1s linear infinite",
+                      margin: "0 auto 16px",
+                    }}
+                  ></div>
+                  <p style={{ color: "#6b7280" }}>Loading document editor...</p>
+                </div>
+              </div>
+            ) : (
+              renderCurrentStep()
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
