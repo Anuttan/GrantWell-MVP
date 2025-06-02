@@ -13,7 +13,9 @@ import DataPage from "./pages/admin/data-view-page";
 import UserFeedbackPage from "./pages/admin/user-feedback-page";
 import SessionPage from "./pages/chatbot/sessions/sessions";
 import Welcome from "./pages/landing-page/basePage";
-import Checklists from "./pages/requirements-gathering/checklist"; // Import the new Checklists page
+import Checklists from "./pages/requirements-gathering/checklist";
+import DocumentEditor from "./pages/document-editor";
+import Dashboard from "./pages/Dashboard";
 import { useState } from "react";
 import "./styles/app.scss";
 import { Mode } from "@cloudscape-design/global-styles";
@@ -38,24 +40,33 @@ function App() {
             />
             <Route path="/landing-page/basePage" element={<Outlet />}>
               <Route path="" element={<Welcome theme={theme} />} />
-              {/* <Route path="checklists/:documentUrl" element={<Checklists />} /> */}
               {/* Route for the checklists page with a dynamic parameter */}
-            <Route
-              // path="/landing-page/basePage/checklists/:documentUrl"
-              // element={<Checklists />}
-              path="/landing-page/basePage/checklists/:documentIdentifier"
-              element={<Checklists />}
-            />
+              <Route
+                path="/landing-page/basePage/checklists/:documentIdentifier"
+                element={<Checklists />}
+              />
             </Route>
             <Route path="/chatbot" element={<Outlet />}>
               <Route path="playground/:sessionId" element={<Playground />} />
               <Route path="sessions" element={<SessionPage />} />
+              <Route
+                path="document-editor"
+                element={<Navigate to="/document-editor" replace />}
+              />
             </Route>
+            {/* Document editor routes - use the new DocumentEditor component */}
+            <Route path="/document-editor" element={<DocumentEditor />} />
+            <Route path="/document-editor/:sessionId" element={<DocumentEditor />} />
             <Route path="/admin" element={<Outlet />}>
               <Route path="data" element={<DataPage />} />
               <Route path="user-feedback" element={<UserFeedbackPage />} />
             </Route>
-            <Route path="*" element={<Navigate to={`/landing-page/basePage`} replace />} />
+            {/* Add Dashboard route */}
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route
+              path="*"
+              element={<Navigate to={`/landing-page/basePage`} replace />}
+            />
           </Routes>
         </div>
       </Router>

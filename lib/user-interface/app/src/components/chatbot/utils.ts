@@ -1,16 +1,14 @@
-import {  
-  ChatBotHistoryItem,  
-  ChatBotMessageType,
-} from "./types";
-
+import { ChatBotHistoryItem, ChatBotMessageType } from "./types";
 
 function pairwise(arr: ChatBotHistoryItem[], func) {
   for (var i = 0; i < arr.length - 1; i++) {
-    func(arr[i], arr[i + 1])
+    func(arr[i], arr[i + 1]);
   }
 }
 
-/**Assembles local message history copy into a format suitable for the chat API */
+/**
+ * Assembles the chat history into a format expected by the API
+ */
 export function assembleHistory(history: ChatBotHistoryItem[]) {
   var hist: Object[] = [];
   for (var i = 0; i < history.length - 1; i++) {

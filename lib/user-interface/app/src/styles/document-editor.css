@@ -1,0 +1,152 @@
+/* Redesigned Document Editor Layout */
+.document-editor-root {
+  min-height: 100vh;
+  width: 100%;
+  background: #f5f7fa;
+  position: relative;
+}
+
+.document-content {
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+.document-editor-workspace {
+  padding: 24px;
+  background: #f5f7fa;
+}
+
+.document-editor-header {
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.document-editor-nofo-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .document-content {
+    margin-left: 60px !important;
+    width: calc(100% - 60px) !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .document-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Main Document Editor Container */
+.document-editor-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Content area that holds the workspace */
+.document-editor-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  background-color: #f5f7fa;
+}
+
+/* Action buttons container */
+.document-editor-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px 24px;
+  background: #ffffff;
+  border-top: 1px solid #e0e0e0;
+  gap: 12px;
+}
+
+/* Button styles */
+.document-action-btn {
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.save-btn {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.save-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.primary-btn {
+  background-color: #0073bb;
+  color: white;
+}
+
+.primary-btn:hover {
+  background-color: #005a93;
+}
+
+/* Section navigation */
+.document-section-nav {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  gap: 8px;
+}
+
+.document-section-item {
+  padding: 8px 16px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.document-section-item.active {
+  background: #0073bb;
+  color: white;
+}

@@ -38,7 +38,12 @@ export class LambdaFunctionStack extends cdk.Stack {
   public readonly syncKBFunction: lambda.Function;
   public readonly getNOFOsList: lambda.Function;
   public readonly getNOFOSummary: lambda.Function;
+  public readonly getNOFOQuestions: lambda.Function;
   public readonly processAndSummarizeNOFO: lambda.Function;
+  public readonly grantRecommendationFunction: lambda.Function;
+  public readonly nofoStatusFunction: lambda.Function;
+  public readonly nofoRenameFunction: lambda.Function;
+  public readonly nofoDeleteFunction: lambda.Function;
 
   constructor(scope: Construct, id: string, props: LambdaFunctionStackProps) {
     super(scope, id);
@@ -77,22 +82,69 @@ export class LambdaFunctionStack extends cdk.Stack {
 
     this.sessionFunction = sessionAPIHandlerFunction;
 
-    // Define the Lambda function resource
+    // Grant Recommendation Lambda function
+    const grantRecommendationFunction = new lambda.Function(
+      scope,
+      "GrantRecommendationFunction",
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        code: lambda.Code.fromAsset(
+          path.join(__dirname, "landing-page/grant-recommendation")
+        ),
+        handler: "index.handler",
+        environment: {
+          BUCKET: props.ffioNofosBucket.bucketName,
+          KB_ID: props.knowledgeBase.attrKnowledgeBaseId,
+        },
+        timeout: cdk.Duration.minutes(2),
+      }
+    );
+
+    // S3 permissions for grant recommendation function
+    grantRecommendationFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["s3:GetObject", "s3:ListBucket"],
+        resources: [
+          props.ffioNofosBucket.bucketArn,
+          `${props.ffioNofosBucket.bucketArn}/*`,
+        ],
+      })
+    );
+
+    // Bedrock permissions for grant recommendation function
+    grantRecommendationFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "bedrock:InvokeModel",
+          "bedrock:Retrieve",
+          "bedrock-agent:Retrieve",
+        ],
+        resources: ["*"],
+      })
+    );
+
+    this.grantRecommendationFunction = grantRecommendationFunction;
+
+    // Update WebSocket chat function
     const websocketAPIFunction = new lambda.Function(
       scope,
       "ChatHandlerFunction",
       {
-        runtime: lambda.Runtime.NODEJS_20_X, // Choose any supported Node.js runtime
-        code: lambda.Code.fromAsset(path.join(__dirname, "websocket-chat")), // Points to the lambda directory
-        handler: "index.handler", // Points to the 'hello' file in the lambda directory
+        runtime: lambda.Runtime.NODEJS_20_X,
+        code: lambda.Code.fromAsset(path.join(__dirname, "websocket-chat")),
+        handler: "index.handler",
         environment: {
           WEBSOCKET_API_ENDPOINT: props.wsApiEndpoint.replace("wss", "https"),
           PROMPT: PROMPT_TEXT,
           KB_ID: props.knowledgeBase.attrKnowledgeBaseId,
+          SESSION_HANDLER: this.sessionFunction.functionName,
         },
         timeout: cdk.Duration.seconds(300),
       }
     );
+
     websocketAPIFunction.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
@@ -103,6 +155,7 @@ export class LambdaFunctionStack extends cdk.Stack {
         resources: ["*"],
       })
     );
+
     websocketAPIFunction.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
@@ -115,7 +168,10 @@ export class LambdaFunctionStack extends cdk.Stack {
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: ["lambda:InvokeFunction"],
-        resources: [this.sessionFunction.functionArn],
+        resources: [
+          this.sessionFunction.functionArn,
+          this.grantRecommendationFunction.functionArn,
+        ],
       })
     );
 
@@ -383,7 +439,34 @@ export class LambdaFunctionStack extends cdk.Stack {
     );
     this.getNOFOSummary = RequirementsForNOFOs;
 
-    // NOFO UPLOAD ATTEMPT
+    const NOFOQuestionsForNOFOs = new lambda.Function(
+      scope,
+      "GetQuestionsForNOFOs",
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        code: lambda.Code.fromAsset(
+          path.join(__dirname, "landing-page/retrieveNOFOQuestions")
+        ),
+        handler: "index.handler",
+        environment: {
+          BUCKET: props.ffioNofosBucket.bucketName,
+        },
+        timeout: cdk.Duration.minutes(2),
+      }
+    );
+
+    NOFOQuestionsForNOFOs.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["s3:*", "bedrock:*"],
+        resources: [
+          props.ffioNofosBucket.bucketArn,
+          props.ffioNofosBucket.bucketArn + "/*",
+        ],
+      })
+    );
+    this.getNOFOQuestions = NOFOQuestionsForNOFOs;
+
     const nofoUploadS3APIHandlerFunction = new lambda.Function(
       scope,
       "nofoUploadS3FilesHandlerFunction",
@@ -399,6 +482,7 @@ export class LambdaFunctionStack extends cdk.Stack {
         timeout: cdk.Duration.seconds(60),
       }
     );
+
     nofoUploadS3APIHandlerFunction.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
@@ -410,7 +494,102 @@ export class LambdaFunctionStack extends cdk.Stack {
       })
     );
     this.uploadNOFOS3Function = nofoUploadS3APIHandlerFunction;
-    // end
+
+    // Add the NOFO status update function
+    const nofoStatusHandlerFunction = new lambda.Function(
+      scope,
+      "NofoStatusHandlerFunction",
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        code: lambda.Code.fromAsset(
+          path.join(__dirname, "landing-page/nofo-status")
+        ),
+        handler: "index.handler",
+        environment: {
+          BUCKET: props.ffioNofosBucket.bucketName,
+        },
+        timeout: cdk.Duration.seconds(30),
+      }
+    );
+
+    nofoStatusHandlerFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["s3:GetObject", "s3:PutObject", "s3:ListBucket"],
+        resources: [
+          props.ffioNofosBucket.bucketArn,
+          props.ffioNofosBucket.bucketArn + "/*",
+        ],
+      })
+    );
+
+    this.nofoStatusFunction = nofoStatusHandlerFunction;
+
+    // Add the NOFO rename function
+    const nofoRenameHandlerFunction = new lambda.Function(
+      scope,
+      "NofoRenameHandlerFunction",
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        code: lambda.Code.fromAsset(
+          path.join(__dirname, "landing-page/nofo-rename")
+        ),
+        handler: "index.handler",
+        environment: {
+          BUCKET: props.ffioNofosBucket.bucketName,
+        },
+        timeout: cdk.Duration.seconds(60),
+      }
+    );
+
+    nofoRenameHandlerFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:ListBucket",
+          "s3:CopyObject",
+        ],
+        resources: [
+          props.ffioNofosBucket.bucketArn,
+          props.ffioNofosBucket.bucketArn + "/*",
+        ],
+      })
+    );
+
+    this.nofoRenameFunction = nofoRenameHandlerFunction;
+
+    // Add the NOFO delete function
+    const nofoDeleteHandlerFunction = new lambda.Function(
+      scope,
+      "NofoDeleteHandlerFunction",
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        code: lambda.Code.fromAsset(
+          path.join(__dirname, "landing-page/nofo-delete")
+        ),
+        handler: "index.handler",
+        environment: {
+          BUCKET: props.ffioNofosBucket.bucketName,
+        },
+        timeout: cdk.Duration.seconds(60),
+      }
+    );
+
+    nofoDeleteHandlerFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["s3:GetObject", "s3:DeleteObject", "s3:ListBucket"],
+        resources: [
+          props.ffioNofosBucket.bucketArn,
+          props.ffioNofosBucket.bucketArn + "/*",
+        ],
+      })
+    );
+
+    this.nofoDeleteFunction = nofoDeleteHandlerFunction;
 
     const uploadS3APIHandlerFunction = new lambda.Function(
       scope,
