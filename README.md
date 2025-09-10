@@ -11,17 +11,17 @@ The application features multiple interactive interfaces including a landing pag
 - **Smart Grant Matching**  
   AI-powered system that analyzes and matches grants to user needs, providing personalized recommendations based on project requirements.
 
-  <img src="https://github.com/Anuttan/Grantwell-MVP/blob/main/lib/user-interface/app/public/images/landingpage.gif?raw=true" alt="Landing page gif" width="500">
+  <img src="https://github.com/Anuttan/Grantwell-MVP/blob/main/packages/frontend/app/public/images/landingpage.gif?raw=true" alt="Landing page gif" width="500">
 
 - **Requirements Analysis**  
   Automatically scans and summarizes Notices of Funding Opportunities (NOFOs), presenting key information about eligibility, required documents, narrative sections, and deadlines.
 
-  <img src="https://github.com/Anuttan/Grantwell-MVP/blob/main/lib/user-interface/app/public/images/reqpage.gif?raw=true" alt="Requirements page gif" width="500">
+  <img src="https://github.com/Anuttan/Grantwell-MVP/blob/main/packages/frontend/app/public/images/reqpage.gif?raw=true" alt="Requirements page gif" width="500">
 
 - **AI-Powered Writing Assistant**  
   Interactive chatbot that assists in drafting grant narratives by prompting for organization details and incorporating information from uploaded documents.
   
-  <img src="https://github.com/Anuttan/Grantwell-MVP/blob/main/lib/user-interface/app/public/images/chatbotreal-compress.gif?raw=true" alt="Chatbot interface gif" width="500">
+  <img src="https://github.com/Anuttan/Grantwell-MVP/blob/main/packages/frontend/app/public/images/chatbotreal-compress.gif?raw=true" alt="Chatbot interface gif" width="500">
 
 - **Document Editor**  
   Section-based editor for drafting and refining grant narratives with AI assistance, progress tracking, and export capabilities.
@@ -31,7 +31,7 @@ The application features multiple interactive interfaces including a landing pag
 
 ## Architecture
 
-<img src="https://raw.githubusercontent.com/Anuttan/Grantwell-MVP/main/lib/user-interface/app/public/images/architecture.png" alt="System Architecture" width="500">
+<img src="https://raw.githubusercontent.com/Anuttan/Grantwell-MVP/main/packages/frontend/app/public/images/architecture.png" alt="System Architecture" width="500">
 
 For more information about the architecture, visit the [AWS GenAI LLM Chatbot](https://aws-samples.github.io/aws-genai-llm-chatbot/).
 

@@ -5,7 +5,7 @@
  */
 
 import * as cdk from "aws-cdk-lib";
-import { AuthorizationStack } from "../authorization";
+import { AuthorizationStack } from "../../infrastructure/authorization";
 import { WebsocketBackendAPI } from "./gateway/websocket-api";
 import { RestBackendAPI } from "./gateway/rest-api";
 import { LambdaFunctionStack } from "./functions/functions";

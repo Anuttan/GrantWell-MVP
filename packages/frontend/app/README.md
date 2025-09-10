@@ -5,10 +5,10 @@ GrantWell MVP is an AI-powered application designed to assist with grant managem
 
 ## Project Structure
 The project is organized into several key components:
-- `/lib/user-interface` - Frontend React application
-- `/lib/chatbot-api` - Backend API services
-- `/lib/authorization` - Authentication and authorization services
-- `/lib/shared` - Shared utilities and components
+- `/packages/frontend` - Frontend React application
+- `/packages/backend/chatbot-api` - Backend API services
+- `/packages/infrastructure/authorization` - Authentication and authorization services
+- `/packages/infrastructure/shared` - Shared utilities and components
 
 ## Technology Stack
 
@@ -54,9 +54,9 @@ npm run dev
 ```
 
 ## Customization
-- UI Components: Located in `/lib/user-interface/src/components`
-- Pages: Located in `/lib/user-interface/src/pages`
-- Constants: Edit `/lib/user-interface/src/common/constants.ts` for project-wide settings
+- UI Components: Located in `/packages/frontend/app/src/components`
+- Pages: Located in `/packages/frontend/app/src/pages`
+- Constants: Edit `/packages/frontend/app/src/common/constants.ts` for project-wide settings
 - Logo: Replace the logo file in the assets directory
 
 ## AWS Infrastructure

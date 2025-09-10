@@ -45,7 +45,7 @@ The GitHub Actions workflow will automatically use this secret during deployment
 The automated scraper requires the following npm packages. They should be installed in the Lambda function directory:
 
 ```bash
-cd lib/chatbot-api/functions/landing-page/automated-nofo-scraper
+cd packages/backend/chatbot-api/functions/landing-page/automated-nofo-scraper
 npm install @aws-sdk/client-s3 axios
 ```
 
@@ -137,7 +137,7 @@ const MAX_OPPORTUNITIES_PER_RUN = 10; // limit to prevent timeout
 
 ### Scheduling
 
-Modify the daily schedule in `lib/chatbot-api/functions/functions.ts`:
+Modify the daily schedule in `packages/backend/chatbot-api/functions/functions.ts`:
 
 ```typescript
 const scraperRule = new events.Rule(scope, 'AutomatedNofoScraperRule', {

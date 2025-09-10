@@ -7,7 +7,7 @@ import {
   execSync,
 } from "node:child_process";
 import * as path from "node:path";
-import { ChatBotApi } from "../chatbot-api";
+import { ChatBotApi } from "../../backend/chatbot-api";
 import { Website } from "./generate-app"
 import { NagSuppressions } from "cdk-nag";
 import { Utils } from "../shared/utils"
@@ -24,7 +24,7 @@ export class UserInterface extends Construct {
   constructor(scope: Construct, id: string, props: UserInterfaceProps) {
     super(scope, id);
 
-    const appPath = path.join(__dirname, "app");
+    const appPath = path.join(__dirname, "../../frontend/app");
     const buildPath = path.join(appPath, "dist");
 
     const uploadLogsBucket = new s3.Bucket(this, "WebsiteLogsBucket", {

@@ -62,7 +62,7 @@
   "description": "This is a blank project for CDK development with TypeScript.",
   "main": "jest.config.js",
   "directories": {
-    "lib": "lib",
+    "lib": "packages",
     "test": "test"
   },
   "keywords": [],

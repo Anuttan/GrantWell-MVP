@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
-import { GenAiMvpStack } from '../lib/gen-ai-mvp-stack';
-import { stackName } from "../lib/constants"
+import { GenAiMvpStack } from '../packages/infrastructure/gen-ai-mvp-stack';
+import { stackName } from "../packages/infrastructure/constants"
 
 const app = new cdk.App();
 new GenAiMvpStack(app, stackName, {

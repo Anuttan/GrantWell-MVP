@@ -2,7 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import * as cf from "aws-cdk-lib/aws-cloudfront";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
-import { ChatBotApi } from "../chatbot-api";
+import { ChatBotApi } from "../../backend/chatbot-api";
 import { NagSuppressions } from "cdk-nag";
 
 
