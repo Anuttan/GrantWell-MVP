@@ -16,7 +16,8 @@ import * as targets from "aws-cdk-lib/aws-events-targets";
 import { Table } from "aws-cdk-lib/aws-dynamodb";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as bedrock from "aws-cdk-lib/aws-bedrock";
-import { S3EventSource } from "aws-cdk-lib/aws-lambda-event-sources";
+import * as sqs from "aws-cdk-lib/aws-sqs";
+import { S3EventSource, SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 
 interface LambdaFunctionStackProps {
   readonly wsApiEndpoint: string;
@@ -50,6 +51,8 @@ export class LambdaFunctionStack extends cdk.Stack {
   public readonly draftFunction: lambda.Function;
   public readonly draftGeneratorFunction: lambda.Function;
   public readonly automatedNofoScraperFunction: lambda.Function;
+  public readonly automatedNofoScraperWorkerFunction: lambda.Function;
+  public readonly nofoScraperQueue: sqs.Queue;
 
   constructor(scope: Construct, id: string, props: LambdaFunctionStackProps) {
     super(scope, id);
@@ -704,7 +707,25 @@ export class LambdaFunctionStack extends cdk.Stack {
 
     this.draftGeneratorFunction = draftGeneratorFunction;
 
-    // Add automated NOFO scraper function
+    // Create SQS dead-letter queue for failed NOFO processing jobs
+    const nofoScraperDLQ = new sqs.Queue(scope, 'NofoScraperDLQ', {
+      retentionPeriod: cdk.Duration.days(14),
+      visibilityTimeout: cdk.Duration.minutes(15),
+    });
+
+    // Create SQS queue for NOFO processing jobs
+    const nofoScraperQueue = new sqs.Queue(scope, 'NofoScraperQueue', {
+      deadLetterQueue: {
+        queue: nofoScraperDLQ,
+        maxReceiveCount: 3,
+      },
+      visibilityTimeout: cdk.Duration.minutes(15),
+      retentionPeriod: cdk.Duration.days(14),
+    });
+
+    this.nofoScraperQueue = nofoScraperQueue;
+
+    // Add automated NOFO scraper function (discovery and enqueue only)
     const automatedNofoScraperFunction = new lambda.Function(
       scope,
       "AutomatedNofoScraperFunction",
@@ -717,20 +738,29 @@ export class LambdaFunctionStack extends cdk.Stack {
         environment: {
           BUCKET: props.ffioNofosBucket.bucketName,
           GRANTS_GOV_API_KEY: props.grantsGovApiKey,
+          NOFO_SCRAPER_QUEUE_URL: nofoScraperQueue.queueUrl,
         },
         timeout: cdk.Duration.minutes(15),
       }
     );
 
-    // S3 permissions for automated NOFO scraper
+    // S3 permissions for automated NOFO scraper (for duplicate checking)
     automatedNofoScraperFunction.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
-        actions: ["s3:GetObject", "s3:PutObject", "s3:ListBucket"],
+        actions: ["s3:ListBucket"],
         resources: [
           props.ffioNofosBucket.bucketArn,
-          `${props.ffioNofosBucket.bucketArn}/*`,
         ],
+      })
+    );
+
+    // SQS permissions for automated NOFO scraper (to send messages)
+    automatedNofoScraperFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["sqs:SendMessage"],
+        resources: [nofoScraperQueue.queueArn],
       })
     );
 
@@ -750,5 +780,62 @@ export class LambdaFunctionStack extends cdk.Stack {
     scraperRule.addTarget(new targets.LambdaFunction(automatedNofoScraperFunction));
 
     this.automatedNofoScraperFunction = automatedNofoScraperFunction;
+
+    // Create automated NOFO scraper worker function (processes SQS messages)
+    const automatedNofoScraperWorkerFunction = new lambda.Function(
+      scope,
+      "AutomatedNofoScraperWorkerFunction",
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        code: lambda.Code.fromAsset(
+          path.join(__dirname, "landing-page/automated-nofo-scraper-worker")
+        ),
+        handler: "index.handler",
+        environment: {
+          BUCKET: props.ffioNofosBucket.bucketName,
+        },
+        timeout: cdk.Duration.minutes(15),
+        reservedConcurrentExecutions: 100, // Limit to 100 concurrent workers
+      }
+    );
+
+    // S3 permissions for worker function
+    automatedNofoScraperWorkerFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["s3:GetObject", "s3:PutObject", "s3:ListBucket"],
+        resources: [
+          props.ffioNofosBucket.bucketArn,
+          `${props.ffioNofosBucket.bucketArn}/*`,
+        ],
+      })
+    );
+
+    // Bedrock permissions for worker function
+    automatedNofoScraperWorkerFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["bedrock:InvokeModel"],
+        resources: ["*"],
+      })
+    );
+
+    // SQS permissions for worker function
+    automatedNofoScraperWorkerFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"],
+        resources: [nofoScraperQueue.queueArn],
+      })
+    );
+
+    // Add SQS event source to worker function
+    automatedNofoScraperWorkerFunction.addEventSource(
+      new SqsEventSource(nofoScraperQueue, {
+        batchSize: 1, // Process one message at a time
+      })
+    );
+
+    this.automatedNofoScraperWorkerFunction = automatedNofoScraperWorkerFunction;
   }
 }

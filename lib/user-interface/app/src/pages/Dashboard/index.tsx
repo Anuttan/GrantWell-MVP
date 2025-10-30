@@ -905,14 +905,25 @@ const Dashboard: React.FC = () => {
       
       const response = await apiClient.landingPage.triggerAutomatedScraper();
       
-      if (response.result && response.result.processed > 0) {
-        addNotification("success", `Successfully processed ${response.result.processed} new NOFOs!`);
-        // Refresh the NOFOs list to show new items
-        await fetchNofos();
+      // Handle response format: API returns either direct data or wrapped in result
+      // Direct format: { enqueued: 5, ... }
+      // Wrapped format: { result: { enqueued: 5, ... } }
+      const resultData = response.result || response;
+      
+      // Check for enqueued count (new format) or processed count (old format)
+      const count = resultData.enqueued || resultData.processed || 0;
+      
+      if (count > 0) {
+        addNotification("success", `Successfully enqueued ${count} new NOFO opportunities! Processing will happen in the background.`);
+        // Refresh the NOFOs list to show new items after a delay
+        setTimeout(async () => {
+          await fetchNofos();
+        }, 5000); // Wait 5 seconds for processing to start
       } else {
         addNotification("info", "No new NOFOs found to process.");
       }
     } catch (error) {
+      console.error("Error triggering automated NOFO scraper:", error);
       addNotification("error", "Failed to run automated NOFO scraper. Please try again.");
     } finally {
       setIsScraping(false);

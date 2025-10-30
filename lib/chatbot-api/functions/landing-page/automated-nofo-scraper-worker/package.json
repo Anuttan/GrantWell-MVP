@@ -1,0 +1,13 @@
+{
+  "name": "automated-nofo-scraper-worker",
+  "version": "1.0.0",
+  "description": "Worker Lambda for processing NOFO opportunities from SQS",
+  "main": "index.mjs",
+  "type": "module",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.679.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.679.0",
+    "adm-zip": "^0.5.16"
+  }
+}
+
