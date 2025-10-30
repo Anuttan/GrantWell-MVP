@@ -795,7 +795,7 @@ export class LambdaFunctionStack extends cdk.Stack {
           BUCKET: props.ffioNofosBucket.bucketName,
         },
         timeout: cdk.Duration.minutes(15),
-        reservedConcurrentExecutions: 100, // Limit to 100 concurrent workers
+        reservedConcurrentExecutions: 5, // Process one NOFO at a time to avoid rate limits
       }
     );
 

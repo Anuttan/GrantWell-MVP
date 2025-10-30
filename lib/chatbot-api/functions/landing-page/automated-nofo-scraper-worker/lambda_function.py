@@ -10,6 +10,7 @@ import os
 import json
 import zipfile
 import io
+import time
 import boto3
 from botocore.exceptions import ClientError
 import urllib.request
@@ -273,6 +274,10 @@ def lambda_handler(event, context):
                     'attachments_processed': len(attachment_results),
                     'attachment_results': attachment_results
                 })
+
+                # Wait 5 minutes before processing next NOFO to avoid rate limits
+                print('Waiting 5 minutes before processing next NOFO...')
+                time.sleep(300)  # 5 minutes = 300 seconds
 
             except Exception as error:
                 print(f'Error processing SQS record: {str(error)}')
