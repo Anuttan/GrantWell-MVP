@@ -786,11 +786,11 @@ export class LambdaFunctionStack extends cdk.Stack {
       scope,
       "AutomatedNofoScraperWorkerFunction",
       {
-        runtime: lambda.Runtime.NODEJS_20_X,
+        runtime: lambda.Runtime.PYTHON_3_12,
         code: lambda.Code.fromAsset(
           path.join(__dirname, "landing-page/automated-nofo-scraper-worker")
         ),
-        handler: "index.handler",
+        handler: "lambda_function.lambda_handler",
         environment: {
           BUCKET: props.ffioNofosBucket.bucketName,
         },
