@@ -142,6 +142,26 @@ const useDocumentStorage = (nofoId: string | null) => {
 };
 
 // Main Component
+// Function to get brand banner + MDS header height dynamically
+// Note: Headers are now static, so this is only used for minHeight calculations
+const getTopOffset = (): number => {
+  const bannerElement = document.querySelector(".ma__brand-banner");
+  const mdsHeaderElement = document.querySelector(".ma__header_slim");
+  
+  let bannerHeight = 40; // Default fallback
+  let mdsHeaderHeight = 60; // Default fallback (typical MDS header height)
+  
+  if (bannerElement) {
+    bannerHeight = bannerElement.getBoundingClientRect().height;
+  }
+  
+  if (mdsHeaderElement) {
+    mdsHeaderHeight = mdsHeaderElement.getBoundingClientRect().height;
+  }
+  
+  return bannerHeight + mdsHeaderHeight;
+};
+
 const DocumentEditor: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<string>("projectBasics");
   const [selectedNofo, setSelectedNofo] = useState<string | null>(null);
@@ -149,6 +169,7 @@ const DocumentEditor: React.FC = () => {
   const [isNofoLoading, setIsNofoLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [welcomeModalOpen, setWelcomeModalOpen] = useState(false);
+  const [topOffset, setTopOffset] = useState<number>(100); // Default: 40px banner + 60px MDS header
   const appContext = useContext(AppContext);
   const navigate = useNavigate();
   const { sessionId } = useParams();
@@ -158,6 +179,53 @@ const DocumentEditor: React.FC = () => {
   const draftsButtonRef = useRef<HTMLButtonElement>(null);
 
   const { documentData, setDocumentData, isLoading, error, setError } = useDocumentStorage(selectedNofo);
+
+  // Monitor brand banner + MDS header height changes (for minHeight calculations only)
+  useEffect(() => {
+    const updateTopOffset = () => {
+      requestAnimationFrame(() => {
+        const offset = getTopOffset();
+        setTopOffset(offset);
+      });
+    };
+
+    // Initial calculation with a small delay to ensure headers are rendered
+    const timer = setTimeout(updateTopOffset, 100);
+    updateTopOffset();
+
+    // Watch for changes
+    const observer = new MutationObserver(updateTopOffset);
+    const bannerElement = document.querySelector(".ma__brand-banner");
+    const mdsHeaderElement = document.querySelector(".ma__header_slim");
+    
+    if (bannerElement) {
+      observer.observe(bannerElement, {
+        attributes: true,
+        childList: true,
+        subtree: true,
+        attributeFilter: ["class", "style"],
+      });
+    }
+
+    if (mdsHeaderElement) {
+      observer.observe(mdsHeaderElement, {
+        attributes: true,
+        childList: true,
+        subtree: true,
+        attributeFilter: ["class", "style"],
+      });
+    }
+
+    window.addEventListener("resize", updateTopOffset);
+    window.addEventListener("scroll", updateTopOffset, { passive: true });
+
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+      window.removeEventListener("resize", updateTopOffset);
+      window.removeEventListener("scroll", updateTopOffset);
+    };
+  }, []);
 
   // Extract NOFO and step from URL parameters and handle session
   useEffect(() => {
@@ -454,12 +522,24 @@ const DocumentEditor: React.FC = () => {
     );
   }
 
+  // Calculate header height for sticky positioning
+  const headerHeight = 60; // Approximate height of document-editor-header
+  const stepperTop = topOffset + headerHeight;
+
   return (
     <div
       className="document-editor-root"
-      style={{ display: "flex", minHeight: "100vh" }}
+      style={{
+        display: "flex",
+        alignItems: "stretch",
+        minHeight: `calc(100vh - ${topOffset}px)`,
+        position: "static",
+        width: "100%",
+        margin: 0,
+        padding: 0,
+      }}
     >
-      <nav aria-label="Document editor navigation">
+      <nav aria-label="Document editor navigation" style={{ flexShrink: 0 }}>
         <DocumentNavigation
           documentIdentifier={selectedNofo}
           currentStep={currentStep}
@@ -472,11 +552,11 @@ const DocumentEditor: React.FC = () => {
       <main
         className="document-content"
         style={{
-          marginLeft: sidebarOpen ? "240px" : "60px",
-          transition: "margin-left 0.3s ease",
-          width: `calc(100% - ${sidebarOpen ? "240px" : "60px"})`,
+          flex: 1,
           display: "flex",
           flexDirection: "column",
+          margin: 0,
+          padding: 0,
         }}
       >
         <div
@@ -485,9 +565,7 @@ const DocumentEditor: React.FC = () => {
             background: "#fff",
             borderBottom: "0",
             width: "100%",
-            position: "sticky",
-            top: 0,
-            zIndex: 10,
+            position: "static",
           }}
         >
           <div
@@ -532,9 +610,7 @@ const DocumentEditor: React.FC = () => {
             marginTop: "0",
             marginBottom: "0",
             boxShadow: "0px 1px 2px rgba(0,0,0,0.05)",
-            position: "sticky",
-            top: "60px",
-            zIndex: 9,
+            position: "static",
           }}
         >
           <Stepper
@@ -575,7 +651,7 @@ const DocumentEditor: React.FC = () => {
 
         <div
           className="document-editor-workspace"
-          style={{ flex: 1, padding: "20px" }}
+          style={{ flex: 1, padding: "20px", paddingBottom: "20px" }}
         >
           {isLoading ? (
             <div
@@ -619,6 +695,7 @@ const DocumentEditor: React.FC = () => {
         }}
         title="Welcome to GrantWell"
         maxWidth="700px"
+        topOffset={topOffset}
       >
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
           <h3

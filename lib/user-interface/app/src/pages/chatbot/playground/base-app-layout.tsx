@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -8,7 +8,28 @@ import {
   List,
   CheckSquare,
   Edit,
+  Home,
 } from "lucide-react";
+
+// Function to get brand banner + MDS header height dynamically
+// Note: Headers are now static, so this is only used for minHeight calculations
+const getTopOffset = (): number => {
+  const bannerElement = document.querySelector(".ma__brand-banner");
+  const mdsHeaderElement = document.querySelector(".ma__header_slim");
+  
+  let bannerHeight = 40; // Default fallback
+  let mdsHeaderHeight = 60; // Default fallback (typical MDS header height)
+  
+  if (bannerElement) {
+    bannerHeight = bannerElement.getBoundingClientRect().height;
+  }
+  
+  if (mdsHeaderElement) {
+    mdsHeaderHeight = mdsHeaderElement.getBoundingClientRect().height;
+  }
+  
+  return bannerHeight + mdsHeaderHeight;
+};
 
 interface BaseAppLayoutProps {
   header: React.ReactNode;
@@ -54,11 +75,8 @@ const styles: Record<string, React.CSSProperties> = {
     transition: "width 0.3s ease",
     overflow: "hidden",
     borderRight: "1px solid #1f3b5a",
-    position: "fixed",
-    top: 0,
-    left: 0,
-    height: "100vh",
-    zIndex: 100,
+    position: "static",
+    flexShrink: 0,
   },
   sidebarExpanded: {
     width: "240px",
@@ -130,9 +148,58 @@ export default function BaseAppLayout({
   modalOpen = false,
 }: BaseAppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [topOffset, setTopOffset] = useState<number>(100); // Default: 40px banner + 60px MDS header
   const location = useLocation();
   const params = useParams();
   const navigate = useNavigate();
+
+  // Monitor brand banner + MDS header height changes (for minHeight calculations only)
+  useEffect(() => {
+    const updateTopOffset = () => {
+      requestAnimationFrame(() => {
+        const offset = getTopOffset();
+        setTopOffset(offset);
+      });
+    };
+
+    // Initial calculation with a small delay to ensure headers are rendered
+    const initialTimer = setTimeout(updateTopOffset, 100);
+    updateTopOffset();
+
+    // Watch for changes
+    const observer = new MutationObserver(updateTopOffset);
+    const bannerElement = document.querySelector(".ma__brand-banner");
+    const mdsHeaderElement = document.querySelector(".ma__header_slim");
+    
+    if (bannerElement) {
+      observer.observe(bannerElement, {
+        attributes: true,
+        childList: true,
+        subtree: true,
+        attributeFilter: ["class", "style"],
+      });
+    }
+
+    // Observe MDS header changes
+    if (mdsHeaderElement) {
+      observer.observe(mdsHeaderElement, {
+        attributes: true,
+        childList: true,
+        subtree: true,
+        attributeFilter: ["class", "style"],
+      });
+    }
+
+    window.addEventListener("resize", updateTopOffset);
+    window.addEventListener("scroll", updateTopOffset, { passive: true });
+
+    return () => {
+      clearTimeout(initialTimer);
+      observer.disconnect();
+      window.removeEventListener("resize", updateTopOffset);
+      window.removeEventListener("scroll", updateTopOffset);
+    };
+  }, []);
 
   // Use the sessionId from props, or fall back to URL params if not provided
   const currentSessionId = sessionId || params.sessionId;
@@ -173,13 +240,24 @@ export default function BaseAppLayout({
   const activeTab = getActiveTab();
 
   return (
-    <div style={styles.container}>
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+    <div 
+      style={{
+        ...styles.container,
+        minHeight: `calc(100vh - ${topOffset}px)`,
+        position: "static",
+        width: "100%",
+        margin: 0,
+        padding: 0,
+      }}
+    >
+      <div style={{ display: "flex", flex: 1, overflow: "hidden", alignItems: "stretch" }}>
         {/* Sidebar */}
         <div
           style={{
             ...styles.sidebar,
             ...(sidebarOpen ? styles.sidebarExpanded : styles.sidebarCollapsed),
+            height: "100%",
+            alignSelf: "stretch",
           }}
           aria-hidden={modalOpen}
         >
@@ -217,6 +295,19 @@ export default function BaseAppLayout({
                   <span>Menu</span>
                 </div>
               )}
+
+              {/* Home Button */}
+              <button
+                onClick={() => navigate("/landing-page/basePage")}
+                style={{
+                  ...styles.navButton,
+                }}
+                aria-label="Home"
+                title="Home"
+              >
+                <Home size={20} />
+                {sidebarOpen && <span style={styles.navLinkText}>Home</span>}
+              </button>
 
               <button
                 onClick={handleChatNavigation}
@@ -307,9 +398,9 @@ export default function BaseAppLayout({
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
-            marginLeft: sidebarOpen ? "240px" : "72px",
-            transition: "margin-left 0.3s ease",
-            width: "calc(100% - " + (sidebarOpen ? "240px" : "72px") + ")",
+            margin: 0,
+            padding: 0,
+            height: "100%",
           }}
         >
           {/* Header area */}

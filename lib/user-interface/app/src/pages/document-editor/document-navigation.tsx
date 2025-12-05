@@ -1,7 +1,28 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import { addToRecentlyViewed } from "../../utils/recently-viewed-nofos";
+import { Home } from "lucide-react";
+
+// Function to get brand banner + MDS header height dynamically
+// Note: Headers are now static, so this is only used for minHeight calculations
+const getTopOffset = (): number => {
+  const bannerElement = document.querySelector(".ma__brand-banner");
+  const mdsHeaderElement = document.querySelector(".ma__header_slim");
+  
+  let bannerHeight = 40; // Default fallback
+  let mdsHeaderHeight = 60; // Default fallback (typical MDS header height)
+  
+  if (bannerElement) {
+    bannerHeight = bannerElement.getBoundingClientRect().height;
+  }
+  
+  if (mdsHeaderElement) {
+    mdsHeaderHeight = mdsHeaderElement.getBoundingClientRect().height;
+  }
+  
+  return bannerHeight + mdsHeaderHeight;
+};
 
 interface DocumentNavigationProps {
   documentIdentifier?: string;
@@ -19,6 +40,54 @@ const DocumentNavigation: React.FC<DocumentNavigationProps> = ({
   setIsOpen,
 }) => {
   const navigate = useNavigate();
+  const [topOffset, setTopOffset] = useState<number>(100); // Default: 40px banner + 60px MDS header
+
+  // Monitor brand banner + MDS header height changes (for minHeight calculations only)
+  useEffect(() => {
+    const updateTopOffset = () => {
+      requestAnimationFrame(() => {
+        const offset = getTopOffset();
+        setTopOffset(offset);
+      });
+    };
+
+    // Initial calculation with a small delay to ensure headers are rendered
+    const initialTimer = setTimeout(updateTopOffset, 100);
+    updateTopOffset();
+
+    // Watch for changes
+    const observer = new MutationObserver(updateTopOffset);
+    const bannerElement = document.querySelector(".ma__brand-banner");
+    const mdsHeaderElement = document.querySelector(".ma__header_slim");
+    
+    if (bannerElement) {
+      observer.observe(bannerElement, {
+        attributes: true,
+        childList: true,
+        subtree: true,
+        attributeFilter: ["class", "style"],
+      });
+    }
+
+    if (mdsHeaderElement) {
+      observer.observe(mdsHeaderElement, {
+        attributes: true,
+        childList: true,
+        subtree: true,
+        attributeFilter: ["class", "style"],
+      });
+    }
+
+    window.addEventListener("resize", updateTopOffset);
+    window.addEventListener("scroll", updateTopOffset, { passive: true });
+
+    return () => {
+      clearTimeout(initialTimer);
+      observer.disconnect();
+      window.removeEventListener("resize", updateTopOffset);
+      window.removeEventListener("scroll", updateTopOffset);
+    };
+  }, []);
 
   // Handle chat navigation
   const handleChatNavigation = () => {
@@ -67,15 +136,13 @@ const DocumentNavigation: React.FC<DocumentNavigationProps> = ({
         color: "white",
         display: "flex",
         flexDirection: "column",
-        height: "100vh",
         borderRight: "1px solid #23272f",
         transition: "width 0.3s ease",
         overflow: "hidden",
-        position: "fixed",
-        top: 0,
-        left: 0,
-        zIndex: 50,
-        minHeight: "100%",
+        position: "static",
+        flexShrink: 0,
+        height: "100%",
+        alignSelf: "stretch",
       }}
     >
       <div
@@ -155,6 +222,36 @@ const DocumentNavigation: React.FC<DocumentNavigationProps> = ({
               Menu
             </div>
           )}
+
+          {/* Home Button */}
+          <button
+            onClick={() => navigate("/landing-page/basePage")}
+            aria-label="Home"
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              padding: "12px 16px",
+              borderRadius: "8px",
+              marginBottom: "8px",
+              background: "none",
+              color: "#e2e8f0",
+              border: "none",
+              fontSize: "16px",
+              cursor: "pointer",
+              transition: "background 0.2s, color 0.2s",
+              textAlign: "left",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background = "#2d3748")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = "none")
+            }
+          >
+            <Home size={20} />
+            {isOpen && <span style={{ marginLeft: "12px" }}>Home</span>}
+          </button>
 
           <button
             onClick={handleChatNavigation}

@@ -9,14 +9,13 @@ import { Auth } from "aws-amplify";
 import useOnFollow from "../common/hooks/use-on-follow";
 import { CHATBOT_NAME } from "../common/constants";
 import "./styles/global-header.css";
-import { Divider } from "@aws-amplify/ui-react";
 import { useNavigate } from "react-router-dom";
 
 const styles = {
   container: {
-    "--color-background-top-navigation": "#0f1b2a", // Dark blue background
+    "--color-background-top-navigation": "#14558f", // Mayflower utility bar color
     "--color-text-top-navigation": "#ffffff", // White text
-    "--color-background-top-navigation-hover": "#1f3b5a", // Slightly lighter blue for hover
+    "--color-background-top-navigation-hover": "#1a6ba8", // Slightly lighter blue for hover
   },
 };
 
@@ -63,8 +62,6 @@ export default function GlobalHeader() {
   }) => {
     if (detail.id === "signout") {
       Auth.signOut();
-    } else if (detail.id === "dashboard") {
-      navigate("/dashboard");
     }
   };
 
@@ -72,57 +69,46 @@ export default function GlobalHeader() {
     <div
       style={{
         ...styles.container,
-        zIndex: 1002,
-        top: 0,
-        left: 0,
-        right: 0,
-        position: "fixed",
-        backgroundColor: "#0073bb",
+        position: "static",
+        backgroundColor: "#14558f",
+        height: "40px",
+        minHeight: "40px",
+        maxHeight: "40px",
+        width: "100%",
       }}
       className="awsui-context-top-navigation"
     >
-      <TopNavigation
-        identity={{
-          href: "/",
-          title: "GrantWell",
-          logo: {
-            src: "/images/stateseal-color.png",
-            alt: "Massachusetts State Seal",
-          },
-        }}
-        i18nStrings={{ searchIconAriaLabel: "Global header" }}
-        utilities={[
-          // {
-          //   type: "button",
-          //   // text: theme === Mode.Dark ? "Light Mode" : "Dark Mode",
-          //   onClick: onChangeThemeClick,
-          // },
+      <div style={{ height: "40px", minHeight: "40px", maxHeight: "40px" }}>
+        <TopNavigation
+          identity={{
+            href: "/",
+            title: "GrantWell",
+          }}
+          i18nStrings={{ searchIconAriaLabel: "Global header" }}
+          utilities={[
+            // {
+            //   type: "button",
+            //   // text: theme === Mode.Dark ? "Light Mode" : "Dark Mode",
+            //   onClick: onChangeThemeClick,
+            // },
 
-          {
-            type: "menu-dropdown",
-            text: userName ?? "User",
-            description: userName ?? "User menu",
-            iconName: "user-profile",
-            ariaLabel: userName ? `User menu for ${userName}` : "User menu",
-            onItemClick: onUserProfileClick,
-            items: [
-              ...(isAdmin
-                ? [
-                    {
-                      id: "dashboard",
-                      text: "Dashboard",
-                    },
-                  ]
-                : []),
-              {
-                id: "signout",
-                text: "Sign out",
-              },
-            ],
-            onItemFollow: onFollow,
-          },
-        ]}
-      />
+            {
+              type: "menu-dropdown",
+              text: userName ?? "User",
+              iconName: "user-profile",
+              ariaLabel: userName ? `User menu for ${userName}` : "User menu",
+              onItemClick: onUserProfileClick,
+              items: [
+                {
+                  id: "signout",
+                  text: "Sign out",
+                },
+              ],
+              onItemFollow: onFollow,
+            },
+          ]}
+        />
+      </div>
     </div>
   );
 }

@@ -35,17 +35,6 @@ export default function Welcome() {
   const bodyTextColor = "#5a5a5a";
   const primaryBlue = "#0073bb"; // Match header blue color
 
-  const containerStyle: CSSProperties = {
-    maxWidth: "950px",
-    margin: "0 auto",
-    padding: "0 40px",
-    marginTop: "70px",
-    minHeight: "100vh",
-    display: "flex",
-    flexDirection: "column",
-    paddingBottom: "0",
-  };
-
   const buttonStyle: CSSProperties = {
     backgroundColor: primaryBlue, // Use blue from the header when active
     color: "white",
@@ -368,7 +357,7 @@ export default function Welcome() {
           }}
         >
           {title && (
-            <h1
+            <h2
               style={{
                 fontSize: titleFontSize,
                 margin: 1,
@@ -376,7 +365,7 @@ export default function Welcome() {
               }}
             >
               {title}
-            </h1>
+            </h2>
           )}
           <p style={{ fontSize: "13px", color: bodyTextColor }}>
             {description}
@@ -396,6 +385,15 @@ export default function Welcome() {
         )}
       </div>
     );
+    const learnMoreLinkStyle: CSSProperties = {
+      color: mainTextColor === "#ffffff" ? "#ffffff" : "#0073bb",
+      textDecoration: "underline",
+      fontSize: "13px",
+      marginTop: "8px",
+      display: "inline-block",
+      cursor: "pointer",
+    };
+
     return (
       <div
         style={{
@@ -413,17 +411,32 @@ export default function Welcome() {
           marginBottom: "0px",
         }}
       >
-        {linkUrl ? (
-          <a
-            href={linkUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ textDecoration: "none", color: "inherit" }}
+        {content}
+        {linkUrl && (
+          <div
+            style={{
+              maxWidth: "900px",
+              margin: "8px auto 0 auto",
+              textAlign: titleAlign,
+            }}
           >
-            {content}
-          </a>
-        ) : (
-          content
+            <a
+              href={linkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={learnMoreLinkStyle}
+              onFocus={(e) => {
+                e.currentTarget.style.outline = "2px solid #2c4fdb";
+                e.currentTarget.style.outlineOffset = "2px";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.outline = "none";
+                e.currentTarget.style.outlineOffset = "0";
+              }}
+            >
+              Learn More
+            </a>
+          </div>
         )}
       </div>
     );
@@ -491,11 +504,6 @@ export default function Welcome() {
           description:
             "Stay updated on current funding opportunities by joining our monthly informational sessions.",
         },
-        {
-          title: "Federal Grant Application Resources",
-          href: "https://www.mass.gov/lists/federal-funds-grant-application-resources",
-          description: "Access categorized grant resources on mass.gov.",
-        },
       ].map((resource, index) => (
         <div
           key={index}
@@ -555,7 +563,7 @@ export default function Welcome() {
 
   // **Render**
   return (
-    <div style={containerStyle}>
+    <>
       {/* Skip Navigation Link for Accessibility */}
       <a
         href="#main-content"
@@ -577,20 +585,27 @@ export default function Welcome() {
         onBlur={(e) => {
           e.currentTarget.style.left = "-9999px";
         }}
+        onClick={(e) => {
+          e.preventDefault();
+          const mainContent = document.getElementById("main-content");
+          if (mainContent) {
+            // Scroll to main content
+            mainContent.scrollIntoView({ behavior: "smooth", block: "start" });
+            // Move focus to main content
+            mainContent.focus();
+          }
+        }}
       >
         Skip to main content
       </a>
-      <main
-        id="main-content"
+      <div
         style={{
           maxWidth: "950px",
           margin: "0 auto",
           padding: "0 40px",
-          marginTop: "20px",
-          minHeight: "100vh",
+          marginTop: "70px",
           display: "flex",
           flexDirection: "column",
-          paddingBottom: "0",
         }}
       >
         {/* Header Section */}
@@ -600,6 +615,7 @@ export default function Welcome() {
             flexDirection: "column",
             justifyContent: "center",
             alignItems: "center",
+            marginTop: "40px",
             marginBottom: "30px",
             position: "relative",
             width: "100%",
@@ -880,11 +896,91 @@ export default function Welcome() {
         {/* Add spacing before next section */}
         <div style={{ marginBottom: "20px" }} />
 
+        {/* Admin Dashboard Section - shown only to admins */}
+        {isAdmin && (
+          <ContentBox backgroundColor="#f0f8ff">
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "15px",
+                padding: "20px 0",
+              }}
+            >
+              <div
+                style={{
+                  textAlign: "center",
+                  maxWidth: "700px",
+                }}
+              >
+                <h2
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: "600",
+                    color: mainTextColor,
+                    margin: "0 0 10px 0",
+                  }}
+                >
+                  Admin Dashboard
+                </h2>
+                <p
+                  style={{
+                    fontSize: "15px",
+                    color: bodyTextColor,
+                    lineHeight: "1.6",
+                    margin: "0 0 15px 0",
+                  }}
+                >
+                  To access the dashboard to add grants or manage users, click the button below.
+                  <br />
+                  <span style={{ fontSize: "13px", fontStyle: "italic", color: "#666" }}>
+                    (This section is only visible to administrators)
+                  </span>
+                </p>
+              </div>
+              <button
+                onClick={() => navigate("/dashboard")}
+                style={{
+                  background: "#006499",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "20px",
+                  padding: "12px 28px",
+                  fontSize: "16px",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  transition: "background 0.2s, box-shadow 0.2s, outline 0.2s",
+                  minWidth: "200px",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#005A94";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#006499";
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.outline = "2px solid #2c4fdb";
+                  e.currentTarget.style.outlineOffset = "2px";
+                  e.currentTarget.style.boxShadow =
+                    "0 0 0 4px rgba(44, 79, 219, 0.2)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.outline = "none";
+                  e.currentTarget.style.outlineOffset = "0px";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+                aria-label="Go to Admin Dashboard"
+              >
+                Go to Admin Dashboard
+              </button>
+            </div>
+          </ContentBox>
+        )}
+
         <ContentBox backgroundColor="#F6FCFF">
           <HistoryPanel />
         </ContentBox>
-
-        <div style={{ flex: 1 }} />
 
         {/* "Additional Resources" Panel */}
         <ContentBox>
@@ -902,7 +998,7 @@ export default function Welcome() {
           }
           backgroundColor="#006499"
         /> */}
-      </main>
+      </div>
 
       {/* Footer Section */}
       <footer>
@@ -1003,22 +1099,7 @@ export default function Welcome() {
             </div>
           </div>
         </div>
-
-        {/* Creative Commons License */}
-        <InfoBanner
-          title=""
-          height="100px"
-          imageSrc="/images/creativeCommons.png"
-          imageAlt="Creative Commons"
-          description="This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License"
-          linkUrl={"https://creativecommons.org/licenses/by-sa/4.0/"}
-          backgroundColor="#000000"
-          titleFontSize="16px"
-          imagePosition="left"
-          imageWidth="75px"
-          titleAlign="center"
-        />
       </footer>
-    </div>
+    </>
   );
 }

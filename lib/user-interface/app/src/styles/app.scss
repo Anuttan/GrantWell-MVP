@@ -17,7 +17,7 @@ div[data-amplify-theme] {
 
 body {
   background-color: #ffffff;
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 
 body.awsui-dark-mode {
@@ -69,6 +69,13 @@ textarea:focus-visible,
   outline-offset: 2px;
 }
 
+/* Hide focus outline on main element - it's only for screen reader navigation */
+main#main-content:focus,
+main#main-content:focus-visible {
+  outline: none;
+  outline-offset: 0;
+}
+
 .header-container {
   display: flex;
   grid-template-columns: 1fr auto;
@@ -90,6 +97,33 @@ textarea:focus-visible,
     border: 1px solid #d6d6d6;
     padding: 10px;
   }
+}
+
+/* Ensure MDS header utility bar appears right after brand banner */
+.ma__header_slim {
+  position: static !important;
+  display: block !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.ma__header_slim__utility {
+  position: static !important;
+  display: block !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  order: 1 !important;
+}
+
+.ma__header_slim__header {
+  position: static !important;
+  display: block !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  order: 2 !important;
 }
 
 .awsui-dark-mode {
@@ -200,5 +234,62 @@ select:focus-visible {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Ensure hidden navigation elements are excluded from keyboard navigation */
+/* Brand banner expansion content when collapsed - prevent pointer events */
+.ma__brand-banner button[aria-expanded="false"] ~ .ma__brand-banner-expansion,
+.ma__brand-banner button[aria-expanded="false"] ~ ul[role="region"] {
+  /* Already visually hidden by Mayflower library, but ensure interaction exclusion */
+  pointer-events: none;
+}
+
+.ma__brand-banner button[aria-expanded="false"] ~ .ma__brand-banner-expansion *,
+.ma__brand-banner button[aria-expanded="false"] ~ ul[role="region"] * {
+  /* Prevent interaction with hidden elements */
+  pointer-events: none;
+}
+
+/* Ensure elements with aria-hidden="true" are excluded from interaction */
+[aria-hidden="true"] {
+  /* Elements with aria-hidden should not receive focus or pointer events */
+  pointer-events: none;
+}
+
+[aria-hidden="true"] * {
+  /* All children of hidden elements should also be excluded from interaction */
+  pointer-events: none;
+}
+
+/* Placeholder text contrast - WCAG 2.1 AA Compliance (4.5:1 contrast ratio) */
+input::placeholder,
+textarea::placeholder {
+  color: #757575 !important; /* Darker color meets 4.5:1 contrast ratio with white background */
+  opacity: 1 !important;
+}
+
+/* Browser-specific placeholder styles */
+input::-webkit-input-placeholder,
+textarea::-webkit-input-placeholder {
+  color: #757575 !important;
+  opacity: 1 !important;
+}
+
+input::-moz-placeholder,
+textarea::-moz-placeholder {
+  color: #757575 !important;
+  opacity: 1 !important;
+}
+
+input:-ms-input-placeholder,
+textarea:-ms-input-placeholder {
+  color: #757575 !important;
+  opacity: 1 !important;
+}
+
+input:-moz-placeholder,
+textarea:-moz-placeholder {
+  color: #757575 !important;
+  opacity: 1 !important;
 }
 
