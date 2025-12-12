@@ -244,4 +244,29 @@ export class LandingPageClient {
       throw error;
     }
   }
+
+  // Generate accessible PDF from HTML content
+  async generateAccessiblePDF(html: string): Promise<Blob> {
+    try {
+      const token = await Utils.authenticate();
+      const response = await fetch(`${this.API}/generate-accessible-pdf`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token,
+        },
+        body: JSON.stringify({ html }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || errorData.error || `Error: ${response.status}`);
+      }
+
+      return await response.blob();
+    } catch (error) {
+      console.error("Error generating accessible PDF:", error);
+      throw error;
+    }
+  }
 }

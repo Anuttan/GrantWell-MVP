@@ -58,6 +58,7 @@ export class LambdaFunctionStack extends cdk.Stack {
   public readonly draftGeneratorFunction: lambda.Function;
   public readonly automatedNofoScraperFunction: lambda.Function;
   public readonly htmlToPdfConverterFunction: lambda.Function;
+  public readonly generateAccessiblePdfFunction: lambda.Function;
   public readonly syncNofoMetadataFunction: lambda.Function;
   public readonly autoArchiveExpiredNofosFunction: lambda.Function;
   public readonly backfillExpirationDatesFunction: lambda.Function;
@@ -1118,6 +1119,23 @@ export class LambdaFunctionStack extends cdk.Stack {
     );
 
     this.htmlToPdfConverterFunction = htmlToPdfConverterFunction;
+
+    // Generate Accessible PDF Lambda Function
+    const generateAccessiblePdfFunction = new lambda.Function(
+      scope,
+      "GenerateAccessiblePdfFunction",
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        code: lambda.Code.fromAsset(
+          path.join(__dirname, "landing-page/generate-accessible-pdf")),
+        handler: "index.handler",
+        layers: [puppeteerCoreLayer],
+        timeout: cdk.Duration.minutes(5),
+        memorySize: 1024, // PDF conversion with Chromium can be memory-intensive
+      }
+    );
+
+    this.generateAccessiblePdfFunction = generateAccessiblePdfFunction;
 
     // Auto-Archive Expired NOFOs Lambda Function
     const autoArchiveExpiredNofosFunction = new lambda.Function(
