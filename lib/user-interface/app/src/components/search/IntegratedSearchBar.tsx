@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import { Spinner } from "@cloudscape-design/components";
 import useGrantRecommendations from "../../hooks/useGrantRecommendations";
 import { GrantRecommendation } from "../../hooks/useGrantRecommendations";
@@ -8,7 +8,6 @@ import { LuPinOff } from "react-icons/lu";
 import { LuChevronDown, LuChevronRight } from "react-icons/lu";
 import { ApiClient } from "../../common/api-client/api-client";
 import { AppContext } from "../../common/app-context";
-import { useContext } from "react";
 
 interface PinnableGrant extends GrantRecommendation {
   isPinned: boolean;
@@ -45,7 +44,7 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
   >([]);
   const [isAssistantLoading, setIsAssistantLoading] = useState(false);
   const [showViewAllModal, setShowViewAllModal] = useState(false);
-  
+
   // Ref for View All Grants modal focus trap
   const viewAllModalRef = useRef<HTMLDivElement>(null);
   const viewAllModalPreviousFocusRef = useRef<HTMLElement | null>(null);
@@ -108,7 +107,7 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
               summaryUrl: `${nofo.name}/`,
             }))
             .sort((a, b) =>
-              a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+              a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
             );
           setPinnedGrants(pinnedGrants);
         }
@@ -142,20 +141,25 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
     if (!showViewAllModal) return;
 
     // Store the currently focused element
-    viewAllModalPreviousFocusRef.current = document.activeElement as HTMLElement;
+    viewAllModalPreviousFocusRef.current =
+      document.activeElement as HTMLElement;
 
     // Focus the modal after a short delay
     setTimeout(() => {
-      const firstFocusable = viewAllModalRef.current?.querySelector<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
+      const firstFocusable =
+        viewAllModalRef.current?.querySelector<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
       firstFocusable?.focus();
     }, 100);
 
     // Restore focus when modal closes
     return () => {
       // Only restore focus if the element still exists in the DOM
-      if (viewAllModalPreviousFocusRef.current && document.body.contains(viewAllModalPreviousFocusRef.current)) {
+      if (
+        viewAllModalPreviousFocusRef.current &&
+        document.body.contains(viewAllModalPreviousFocusRef.current)
+      ) {
         viewAllModalPreviousFocusRef.current.focus();
       }
     };
@@ -168,9 +172,10 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
     const handleTabKey = (e: KeyboardEvent) => {
       if (e.key !== "Tab") return;
 
-      const focusableElements = viewAllModalRef.current?.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
+      const focusableElements =
+        viewAllModalRef.current?.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
 
       if (!focusableElements || focusableElements.length === 0) return;
 
@@ -209,7 +214,7 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
         doc.label.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .sort((a, b) =>
-        a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
+        a.label.localeCompare(b.label, undefined, { sensitivity: "base" })
       );
     setFilteredDocuments(filtered);
 
@@ -219,10 +224,10 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
         grant.name.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .sort((a, b) =>
-        a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
       );
     setFilteredPinnedGrants(filteredPinned);
-    
+
     // Reset selectedIndex when results change
     setSelectedIndex(-1);
   }, [searchTerm, documents, pinnedGrants]);
@@ -558,13 +563,18 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
     width: "100%",
   };
 
+  // Visually hidden label - accessible to screen readers, hidden visually
+  // The placeholder provides visual context for sighted users
   const labelStyle: React.CSSProperties = {
-    display: "block",
-    fontSize: "16px",
-    fontWeight: "500",
-    color: "#006499",
-    marginBottom: "8px",
-    cursor: "pointer",
+    position: "absolute",
+    width: "1px",
+    height: "1px",
+    padding: "0",
+    margin: "-1px",
+    overflow: "hidden",
+    clip: "rect(0, 0, 0, 0)",
+    whiteSpace: "nowrap",
+    border: "0",
   };
 
   const searchIconStyle: React.CSSProperties = {
@@ -672,7 +682,7 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
   const pinnedBadgeStyle: React.CSSProperties = {
     display: "inline-block",
     fontSize: "11px",
-    backgroundColor: "#006e7a",
+    backgroundColor: "#005a63",
     color: "white",
     padding: "2px 6px",
     borderRadius: "10px",
@@ -700,8 +710,11 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
   };
 
   // Toggle the expanded state of a grant
-  const toggleGrantExpanded = (grantKey: string, event: React.MouseEvent) => {
-    // Stop event propagation
+  const toggleGrantExpanded = (
+    grantKey: string,
+    event?: React.MouseEvent | React.KeyboardEvent
+  ) => {
+    // Stop event propagation for both mouse and keyboard events
     if (event) {
       event.stopPropagation(); // Prevent triggering card click
       event.preventDefault(); // Ensure the event doesn't bubble up
@@ -855,10 +868,10 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
           aria-label="Search for grants"
           aria-describedby="search-help-know-grant search-help-not-sure"
           aria-autocomplete="list"
-          aria-controls="search-results-listbox"
           aria-expanded={showResults}
+          aria-controls={showResults ? "search-results-listbox" : undefined}
           aria-activedescendant={
-            selectedIndex >= 0 && showResults
+            selectedIndex >= 0 && showResults && !showAssistant
               ? `search-result-${selectedIndex}`
               : undefined
           }
@@ -955,15 +968,21 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
 
       {/* Search Results Count Announcement for Screen Readers */}
       {showResults && !showAssistant && searchTerm.length > 0 && (
-        <div 
-          role="status" 
-          aria-live="polite" 
-          aria-atomic="true" 
+        <div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
           className="sr-only"
         >
           {filteredPinnedGrants.length + filteredDocuments.length === 0
             ? `No results found for "${searchTerm}"`
-            : `${filteredPinnedGrants.length + filteredDocuments.length} result${filteredPinnedGrants.length + filteredDocuments.length === 1 ? '' : 's'} found`}
+            : `${
+                filteredPinnedGrants.length + filteredDocuments.length
+              } result${
+                filteredPinnedGrants.length + filteredDocuments.length === 1
+                  ? ""
+                  : "s"
+              } found`}
         </div>
       )}
 
@@ -1007,7 +1026,7 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
                 >
                   <strong>Not sure where to start?</strong> Click "Grant
                   Assistant" Button below to describe what you're looking for.
-                  Or click the "View All Grants" Button to browse all grants. 
+                  Or click the "View All Grants" Button to browse all grants.
                 </p>
               </div>
               <div
@@ -1024,149 +1043,182 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
             </div>
           )}
 
-          {/* Pinned grants section - show when search is empty OR when filtered */}
-          {(searchTerm.length === 0
-            ? pinnedGrants.length > 0
-            : filteredPinnedGrants.length > 0) && (
-            <>
-              <div style={sectionHeaderStyle}>Pinned Grants</div>
-              {(searchTerm.length === 0
-                ? pinnedGrants
-                : filteredPinnedGrants
-              ).map((grant, index) => (
-                <div
-                  key={`pinned-${index}`}
-                  id={`search-result-${index}`}
-                  style={
-                    selectedIndex === index
-                      ? selectedPinnedItemStyle
-                      : pinnedItemStyle
-                  }
-                  onClick={() => {
-                    handlePinnedGrantSelect(grant);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      handlePinnedGrantSelect(grant);
-                    }
-                  }}
-                  onMouseEnter={() => setSelectedIndex(index)}
-                  onFocus={(e) => {
-                    e.currentTarget.style.outline = "2px solid #2c4fdb";
-                    e.currentTarget.style.outlineOffset = "2px";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.outline = "none";
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Select ${grant.name}`}
-                >
-                  <div>
-                    <div>
+          {/* Listbox containing only option elements */}
+          <div
+            id="search-results-listbox"
+            role="listbox"
+            style={{
+              marginTop: searchTerm.length === 0 ? "10px" : "0",
+            }}
+          >
+            {/* Pinned grants section - show when search is empty OR when filtered */}
+            {(searchTerm.length === 0
+              ? pinnedGrants.length > 0
+              : filteredPinnedGrants.length > 0) && (
+              <>
+                <div style={sectionHeaderStyle}>Pinned Grants</div>
+                {(searchTerm.length === 0
+                  ? pinnedGrants
+                  : filteredPinnedGrants
+                ).map((grant, index) => (
+                  <div
+                    key={`pinned-${index}`}
+                    id={`search-result-${index}`}
+                    role="option"
+                    aria-selected={selectedIndex === index}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "8px",
+                      ...(selectedIndex === index
+                        ? selectedPinnedItemStyle
+                        : pinnedItemStyle),
+                      padding: "12px 15px",
+                    }}
+                    onMouseEnter={() => setSelectedIndex(index)}
+                  >
+                    <button
+                      onClick={() => {
+                        handlePinnedGrantSelect(grant);
+                      }}
+                      onFocus={(e) => {
+                        setSelectedIndex(index);
+                        e.currentTarget.style.outline = "2px solid #2c4fdb";
+                        e.currentTarget.style.outlineOffset = "2px";
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.outline = "none";
+                      }}
+                      style={{
+                        flex: 1,
+                        textAlign: "left",
+                        background: "none",
+                        border: "none",
+                        padding: 0,
+                        cursor: "pointer",
+                        color: "inherit",
+                        fontSize: "inherit",
+                        fontFamily: "inherit",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                      aria-label={`Select ${grant.name}`}
+                    >
                       <span>{grant.name}</span>
                       <span style={pinnedBadgeStyle}>Pinned</span>
-                    </div>
-                  </div>
+                    </button>
 
-                  {isAdmin && (
-                    <div style={{ display: "flex", alignItems: "center" }}>
+                    {isAdmin && (
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <button
+                          onClick={(e) => handleUnpinGrant(grant.name, e)}
+                          style={unpinButtonStyle}
+                          title="Unpin grant"
+                          aria-label={`Unpin ${grant.name}`}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.backgroundColor = "#f8e0e0";
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.backgroundColor =
+                              "transparent";
+                          }}
+                          onFocus={(e) => {
+                            e.currentTarget.style.backgroundColor = "#f8e0e0";
+                            e.currentTarget.style.outline = "2px solid #2c4fdb";
+                            e.currentTarget.style.outlineOffset = "2px";
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.backgroundColor =
+                              "transparent";
+                            e.currentTarget.style.outline = "none";
+                            e.currentTarget.style.outlineOffset = "0";
+                          }}
+                        >
+                          <LuPinOff size={20} color="#E74C3C" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </>
+            )}
+
+            {/* Available grants section - ONLY show when user is actively searching */}
+            {searchTerm.length > 0 && filteredDocuments.length > 0 && (
+              <>
+                <div style={sectionHeaderStyle}>Available Grants</div>
+                {filteredDocuments.map((doc, index) => {
+                  const docName = doc.label || "";
+
+                  const isPinned = isNofoPinned(docName);
+
+                  return (
+                    <div
+                      key={`doc-${docName}-${index}`}
+                      id={`search-result-${
+                        index + filteredPinnedGrants.length
+                      }`}
+                      role="option"
+                      aria-selected={
+                        selectedIndex === index + filteredPinnedGrants.length
+                      }
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "8px",
+                        ...(selectedIndex ===
+                        index + filteredPinnedGrants.length
+                          ? selectedItemStyle
+                          : resultItemStyle),
+                        padding: "12px 15px",
+                      }}
+                      onMouseEnter={() =>
+                        setSelectedIndex(index + filteredPinnedGrants.length)
+                      }
+                    >
                       <button
-                        onClick={(e) => handleUnpinGrant(grant.name, e)}
-                        style={unpinButtonStyle}
-                        title="Unpin grant"
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.backgroundColor = "#f8e0e0";
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.backgroundColor = "transparent";
+                        onClick={() => {
+                          setSearchTerm(docName);
+                          onSelectDocument(doc);
+                          setShowResults(false);
                         }}
                         onFocus={(e) => {
-                          e.currentTarget.style.backgroundColor = "#f8e0e0";
+                          setSelectedIndex(index + filteredPinnedGrants.length);
                           e.currentTarget.style.outline = "2px solid #2c4fdb";
                           e.currentTarget.style.outlineOffset = "2px";
                         }}
                         onBlur={(e) => {
-                          e.currentTarget.style.backgroundColor = "transparent";
                           e.currentTarget.style.outline = "none";
-                          e.currentTarget.style.outlineOffset = "0";
                         }}
+                        style={{
+                          flex: 1,
+                          textAlign: "left",
+                          background: "none",
+                          border: "none",
+                          padding: 0,
+                          cursor: "pointer",
+                          color: "inherit",
+                          fontSize: "inherit",
+                          fontFamily: "inherit",
+                        }}
+                        aria-label={`Select ${docName}`}
                       >
-                        <LuPinOff size={20} color="#E74C3C" />
+                        {docName}
                       </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </>
-          )}
-
-          {/* Available grants section - ONLY show when user is actively searching */}
-          {searchTerm.length > 0 && filteredDocuments.length > 0 && (
-            <>
-              <div style={sectionHeaderStyle}>Available Grants</div>
-              {filteredDocuments.map((doc, index) => {
-                const docName = doc.label || "";
-
-                const isPinned = isNofoPinned(docName);
-
-                return (
-                  <div
-                    key={`doc-${docName}-${index}`}
-                    id={`search-result-${index + filteredPinnedGrants.length}`}
-                    style={
-                      selectedIndex === index + filteredPinnedGrants.length
-                        ? selectedItemStyle
-                        : resultItemStyle
-                    }
-                    onClick={() => {
-                      setSearchTerm(docName);
-                      onSelectDocument(doc);
-                      setShowResults(false);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setSearchTerm(docName);
-                        onSelectDocument(doc);
-                        setShowResults(false);
-                      }
-                    }}
-                    onMouseEnter={() =>
-                      setSelectedIndex(index + filteredPinnedGrants.length)
-                    }
-                    onFocus={(e) => {
-                      e.currentTarget.style.outline = "2px solid #2c4fdb";
-                      e.currentTarget.style.outlineOffset = "2px";
-                    }}
-                    onBlur={(e) => {
-                      e.currentTarget.style.outline = "none";
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`Select ${docName}`}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        width: "100%",
-                      }}
-                    >
-                      <div>{docName}</div>
 
                       {isAdmin && (
                         <div style={{ display: "flex", alignItems: "center" }}>
                           {isPinned ? (
                             <button
                               onClick={(e) => {
-                                e.stopPropagation();
                                 handleUnpinGrant(docName, e);
                               }}
                               style={unpinButtonStyle}
                               title="Unpin grant"
+                              aria-label={`Unpin ${docName}`}
                               onMouseOver={(e) => {
                                 e.currentTarget.style.backgroundColor =
                                   "#f8e0e0";
@@ -1178,7 +1230,8 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
                               onFocus={(e) => {
                                 e.currentTarget.style.backgroundColor =
                                   "#f8e0e0";
-                                e.currentTarget.style.outline = "2px solid #2c4fdb";
+                                e.currentTarget.style.outline =
+                                  "2px solid #2c4fdb";
                                 e.currentTarget.style.outlineOffset = "2px";
                               }}
                               onBlur={(e) => {
@@ -1193,7 +1246,6 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
                           ) : (
                             <button
                               onClick={(e) => {
-                                e.stopPropagation();
                                 // Create a grant object from the document
                                 const grant: GrantRecommendation = {
                                   id: "", // ID not needed
@@ -1210,6 +1262,7 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
                               }}
                               style={pinButtonStyle}
                               title="Pin grant to top of recommendations"
+                              aria-label={`Pin ${docName}`}
                               onMouseOver={(e) => {
                                 e.currentTarget.style.backgroundColor =
                                   "#e0f0ff";
@@ -1221,7 +1274,8 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
                               onFocus={(e) => {
                                 e.currentTarget.style.backgroundColor =
                                   "#e0f0ff";
-                                e.currentTarget.style.outline = "2px solid #2c4fdb";
+                                e.currentTarget.style.outline =
+                                  "2px solid #2c4fdb";
                                 e.currentTarget.style.outlineOffset = "2px";
                               }}
                               onBlur={(e) => {
@@ -1237,13 +1291,13 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
                         </div>
                       )}
                     </div>
-                  </div>
-                );
-              })}
-            </>
-          )}
+                  );
+                })}
+              </>
+            )}
+          </div>
 
-          {/* No results state with assistant button */}
+          {/* No results state with assistant button - outside listbox */}
           {searchTerm.length > 0 &&
             filteredPinnedGrants.length === 0 &&
             filteredDocuments.length === 0 && (
@@ -1274,11 +1328,18 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
       {/* Simplified Grant Assistant */}
       {showResults && showAssistant && (
         <div style={resultsContainerStyle}>
+          {/* Empty listbox for ARIA compliance when assistant is showing */}
+          <div
+            id="search-results-listbox"
+            role="listbox"
+            style={{ display: "none" }}
+            aria-hidden="true"
+          />
           <div style={assistantContainerStyle}>
             <div style={assistantHeaderStyle}>
-              <h3 style={{ margin: 0, fontSize: "16px", color: "#0073BB" }}>
+              <h2 style={{ margin: 0, fontSize: "16px", color: "#0073BB" }}>
                 Describe Your Grant Needs
-              </h3>
+              </h2>
               <button
                 style={assistantCloseButtonStyle}
                 onClick={closeAssistant}
@@ -1337,38 +1398,56 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
                         key={grantKey}
                         style={{
                           ...grantCardStyle,
-                          cursor: "pointer",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "12px",
                         }}
-                        onClick={() =>
-                          handleAssistantGrantClick(grant.summaryUrl, grantName)
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            handleAssistantGrantClick(
-                              grant.summaryUrl,
-                              grantName
-                            );
-                          }
-                        }}
-                        onFocus={(e) => {
-                          e.currentTarget.style.outline = "2px solid #2c4fdb";
-                          e.currentTarget.style.outlineOffset = "2px";
-                        }}
-                        onBlur={(e) => {
-                          e.currentTarget.style.outline = "none";
-                        }}
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`View details for ${grantName}`}
                       >
-                        <div style={grantCardHeaderStyle}>
-                          <div style={grantCardTitleStyle}>{grantName}</div>
+                        <div
+                          style={{
+                            ...grantCardHeaderStyle,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: "8px",
+                          }}
+                        >
+                          <button
+                            onClick={() =>
+                              handleAssistantGrantClick(
+                                grant.summaryUrl,
+                                grantName
+                              )
+                            }
+                            onFocus={(e) => {
+                              e.currentTarget.style.outline =
+                                "2px solid #2c4fdb";
+                              e.currentTarget.style.outlineOffset = "2px";
+                            }}
+                            onBlur={(e) => {
+                              e.currentTarget.style.outline = "none";
+                            }}
+                            style={{
+                              flex: 1,
+                              textAlign: "left",
+                              background: "none",
+                              border: "none",
+                              padding: 0,
+                              cursor: "pointer",
+                              color: "inherit",
+                              fontSize: "inherit",
+                              fontFamily: "inherit",
+                            }}
+                            aria-label={`View details for ${grantName}`}
+                          >
+                            <div style={grantCardTitleStyle}>{grantName}</div>
+                          </button>
                           <button
                             type="button"
-                            tabIndex={0}
                             aria-expanded={isExpanded}
-                            aria-label={`${isExpanded ? 'Collapse' : 'Expand'} details for ${grantName}`}
+                            aria-label={`${
+                              isExpanded ? "Collapse" : "Expand"
+                            } details for ${grantName}`}
                             style={{
                               display: "flex",
                               alignItems: "center",
@@ -1382,8 +1461,15 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
                               width: "auto",
                               textAlign: "left",
                               transition: "all 0.2s ease",
+                              flexShrink: 0,
                             }}
                             onClick={(e) => toggleGrantExpanded(grantKey, e)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                toggleGrantExpanded(grantKey, e);
+                              }
+                            }}
                             onMouseOver={(e) => {
                               e.currentTarget.style.backgroundColor = "#e0f0ff";
                               e.currentTarget.style.color = "#0073BB";
@@ -1395,7 +1481,8 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
                             onFocus={(e) => {
                               e.currentTarget.style.backgroundColor = "#e0f0ff";
                               e.currentTarget.style.color = "#0073BB";
-                              e.currentTarget.style.outline = "2px solid #2c4fdb";
+                              e.currentTarget.style.outline =
+                                "2px solid #2c4fdb";
                               e.currentTarget.style.outlineOffset = "2px";
                             }}
                             onBlur={(e) => {
@@ -1502,6 +1589,7 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
           }}
           role="dialog"
           aria-modal="true"
+          aria-labelledby="view-all-grants-modal-title"
         >
           <div
             ref={viewAllModalRef}
@@ -1531,6 +1619,7 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
               }}
             >
               <h2
+                id="view-all-grants-modal-title"
                 style={{
                   margin: 0,
                   fontSize: "24px",
@@ -1634,7 +1723,7 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
                         {pinnedGrants
                           .sort((a, b) =>
                             a.name.localeCompare(b.name, undefined, {
-                              sensitivity: 'base',
+                              sensitivity: "base",
                             })
                           )
                           .map((grant, index, sortedPinned) => (
@@ -1664,7 +1753,8 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
                                 }
                               }}
                               onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = "#f0ffff";
+                                e.currentTarget.style.backgroundColor =
+                                  "#f0ffff";
                               }}
                               onMouseLeave={(e) => {
                                 e.currentTarget.style.backgroundColor =
@@ -1674,12 +1764,15 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
                               tabIndex={0}
                               aria-label={`Select ${grant.name}`}
                               onFocus={(e) => {
-                                e.currentTarget.style.backgroundColor = "#f0ffff";
-                                e.currentTarget.style.outline = "2px solid #2c4fdb";
+                                e.currentTarget.style.backgroundColor =
+                                  "#f0ffff";
+                                e.currentTarget.style.outline =
+                                  "2px solid #2c4fdb";
                                 e.currentTarget.style.outlineOffset = "2px";
                               }}
                               onBlur={(e) => {
-                                e.currentTarget.style.backgroundColor = "transparent";
+                                e.currentTarget.style.backgroundColor =
+                                  "transparent";
                                 e.currentTarget.style.outline = "none";
                               }}
                             >
@@ -1697,7 +1790,7 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
                                   style={{
                                     display: "inline-block",
                                     fontSize: "11px",
-                                    backgroundColor: "#008798",
+                                    backgroundColor: "#005a63",
                                     color: "white",
                                     padding: "3px 8px",
                                     borderRadius: "12px",
@@ -1725,7 +1818,7 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
                         .filter((doc) => !isNofoPinned(doc.label))
                         .sort((a, b) =>
                           a.label.localeCompare(b.label, undefined, {
-                            sensitivity: 'base',
+                            sensitivity: "base",
                           })
                         )
                         .map((doc, index, sortedDocs) => {
@@ -1757,7 +1850,8 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
                                 }
                               }}
                               onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = "#f7faff";
+                                e.currentTarget.style.backgroundColor =
+                                  "#f7faff";
                               }}
                               onMouseLeave={(e) => {
                                 e.currentTarget.style.backgroundColor =
@@ -1767,12 +1861,15 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
                               tabIndex={0}
                               aria-label={`Select ${doc.label}`}
                               onFocus={(e) => {
-                                e.currentTarget.style.backgroundColor = "#f7faff";
-                                e.currentTarget.style.outline = "2px solid #2c4fdb";
+                                e.currentTarget.style.backgroundColor =
+                                  "#f7faff";
+                                e.currentTarget.style.outline =
+                                  "2px solid #2c4fdb";
                                 e.currentTarget.style.outlineOffset = "2px";
                               }}
                               onBlur={(e) => {
-                                e.currentTarget.style.backgroundColor = "transparent";
+                                e.currentTarget.style.backgroundColor =
+                                  "transparent";
                                 e.currentTarget.style.outline = "none";
                               }}
                             >

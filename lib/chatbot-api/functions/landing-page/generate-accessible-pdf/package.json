@@ -1,0 +1,7 @@
+{
+  "name": "generate-accessible-pdf",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Lambda function to generate accessible PDFs from HTML"
+}
+

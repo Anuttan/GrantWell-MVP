@@ -2,7 +2,6 @@ import React, { useState, useEffect, useContext } from "react";
 import { AppContext } from "../../common/app-context";
 import { ApiClient } from "../../common/api-client/api-client";
 import { Auth } from "aws-amplify";
-import { jsPDF } from "jspdf";
 
 interface ReviewApplicationProps {
   onExport: () => void;
@@ -96,135 +95,206 @@ const ReviewApplication: React.FC<ReviewApplicationProps> = ({
     onNavigate("sections");
   };
 
-  const handleExportPDF = async () => {
-    // Gather all application data
-    let draftData = null;
-    if (appContext && selectedNofo) {
-      try {
-        const apiClient = new ApiClient(appContext);
-        const username = (await Auth.currentAuthenticatedUser()).username;
-        draftData = await apiClient.drafts.getDraft({
-          sessionId: sessionId,
-          userId: username
-        });
-      } catch (error) {
-        console.error("Error fetching draft for PDF export:", error);
-        alert("Failed to fetch draft data for export.");
-        return;
-      }
+  /**
+   * Generate accessible HTML structure from draft data
+   * Uses semantic HTML elements and proper heading hierarchy for accessibility
+   */
+  const generateAccessibleHTML = (draftData: any): string => {
+    const sectionNames = draftData.sections ? Object.keys(draftData.sections) : [];
+    
+    // Escape HTML to prevent XSS
+    const escapeHtml = (text: string): string => {
+      if (!text) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
+    // Format text content into paragraphs
+    const formatContent = (content: string): string => {
+      if (!content) return '';
+      return content
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .map(line => `<p>${escapeHtml(line)}</p>`)
+        .join('');
+    };
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grant Application - ${escapeHtml(draftData.title || "Untitled")}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 1in;
     }
-    if (!draftData) {
-      alert("No draft data available for export.");
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #000;
+      max-width: 8.5in;
+      margin: 0 auto;
+      padding: 0.5in;
+    }
+    h1 {
+      font-size: 18pt;
+      font-weight: bold;
+      margin-top: 28pt;
+      margin-bottom: 14pt;
+      text-align: center;
+    }
+    h2 {
+      font-size: 13pt;
+      font-weight: bold;
+      margin-top: 18pt;
+      margin-bottom: 12pt;
+    }
+    h3 {
+      font-size: 12pt;
+      font-weight: normal;
+      margin-top: 16pt;
+      margin-bottom: 10pt;
+    }
+    p {
+      font-size: 12pt;
+      margin: 14pt 0;
+      text-align: justify;
+    }
+    .project-basics {
+      margin: 20pt 0;
+      text-align: center;
+    }
+    .project-basics p {
+      margin: 8pt 0;
+    }
+    .divider {
+      border-top: 1px solid #c8c8c8;
+      margin: 20pt 0;
+    }
+    nav.toc {
+      margin: 20pt 0;
+    }
+    nav.toc ol {
+      list-style-type: none;
+      padding-left: 0;
+    }
+    nav.toc li {
+      margin: 8pt 0;
+      padding-left: 20pt;
+      position: relative;
+    }
+    nav.toc li::before {
+      content: counter(section-counter) ". ";
+      counter-increment: section-counter;
+      position: absolute;
+      left: 0;
+    }
+    nav.toc {
+      counter-reset: section-counter;
+    }
+    section {
+      page-break-inside: avoid;
+      margin: 20pt 0;
+    }
+    footer {
+      margin-top: 40pt;
+      padding-top: 20pt;
+      border-top: 1px solid #c8c8c8;
+      text-align: center;
+      font-size: 10pt;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>SAFE STREETS FOR ALL GRANT APPLICATION</h1>
+    ${draftData.title ? `<h2 style="text-align: center; font-size: 14pt; font-weight: normal;">${escapeHtml(draftData.title)}</h2>` : ''}
+    
+    ${draftData.projectBasics ? `
+    <section class="project-basics" aria-label="Project Basics">
+      ${Object.entries(draftData.projectBasics).map(([key, value]) => 
+        `<p><strong>${escapeHtml(String(key))}:</strong> ${escapeHtml(String(value))}</p>`
+      ).join('')}
+    </section>
+    <div class="divider" role="separator" aria-label="Section divider"></div>
+    ` : ''}
+    
+    <nav class="toc" aria-label="Table of Contents">
+      <h2>TABLE OF CONTENTS</h2>
+      <ol>
+        ${sectionNames.map((name, idx) => 
+          `<li><a href="#section-${idx}">${escapeHtml(name)}</a></li>`
+        ).join('')}
+      </ol>
+    </nav>
+    <div class="divider" role="separator" aria-label="Section divider"></div>
+    
+    ${sectionNames.map((name, idx) => `
+      <section aria-labelledby="section-heading-${idx}">
+        <h2 id="section-heading-${idx}">${idx + 1}. ${escapeHtml(name.toUpperCase())}</h2>
+        <div>
+          ${formatContent(draftData.sections[name] || "")}
+        </div>
+      </section>
+    `).join('')}
+    
+    <footer>
+      <p>Generated by AI. Please review and edit as needed before submission.</p>
+    </footer>
+  </main>
+</body>
+</html>`;
+  };
+
+  const handleExportPDF = async () => {
+    if (!appContext || !selectedNofo) {
+      alert("Application context or NOFO selection is missing.");
       return;
     }
 
-    const doc = new jsPDF({ unit: "pt", format: "a4" });
-    const pageWidth = doc.internal.pageSize.getWidth();
-    let y = 40;
-
-    // Header
-    doc.setFontSize(18);
-    doc.setFont(undefined, "bold");
-    doc.text("SAFE STREETS FOR ALL GRANT APPLICATION", pageWidth / 2, y, { align: "center" });
-    y += 28;
-    doc.setFontSize(14);
-    doc.setFont(undefined, "normal");
-    doc.text(draftData.title || "", pageWidth / 2, y, { align: "center" });
-    y += 24;
-
-    // Project Basics
-    doc.setFontSize(12);
-    if (draftData.projectBasics) {
-      Object.entries(draftData.projectBasics).forEach(([key, value]) => {
-        doc.text(`${key}: ${value}`, pageWidth / 2, y, { align: "center" });
-        y += 16;
+    try {
+      // Create API client once and reuse it
+      const apiClient = new ApiClient(appContext);
+      const username = (await Auth.currentAuthenticatedUser()).username;
+      
+      // Gather all application data
+      const draftData = await apiClient.drafts.getDraft({
+        sessionId: sessionId,
+        userId: username
       });
+
+      if (!draftData) {
+        alert("No draft data available for export.");
+        return;
+      }
+
+      // Generate accessible HTML structure
+      const htmlContent = generateAccessibleHTML(draftData);
+      
+      // Call backend API to generate accessible PDF
+      const pdfBlob = await apiClient.landingPage.generateAccessiblePDF(htmlContent);
+      
+      // Download the PDF
+      const url = window.URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'grant-application.pdf';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Error generating accessible PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
     }
-    y += 10;
-    doc.setDrawColor(200);
-    doc.line(40, y, pageWidth - 40, y);
-    y += 20;
-
-    // Table of Contents
-    doc.setFontSize(13);
-    doc.setFont(undefined, "bold");
-    doc.text("TABLE OF CONTENTS", 50, y);
-    y += 20;
-    doc.setFont(undefined, "normal");
-    const sectionNames = draftData.sections ? Object.keys(draftData.sections) : [];
-    const tocStartY = y;
-    const tocEntries = [];
-    sectionNames.forEach((name, idx) => {
-      // Store Y position for page number
-      const sectionText = `${idx + 1}. ${name}`;
-      const leftX = 60;
-      const rightX = pageWidth - 80;
-      doc.text(sectionText, leftX, y, { align: "left" });
-      // Dotted line
-      const textWidth = doc.getTextWidth(sectionText);
-      const dotsStart = leftX + textWidth + 5;
-      const dotsEnd = rightX - 25;
-      const dotY = y - 3;
-      for (let x = dotsStart; x < dotsEnd; x += 4) {
-        doc.line(x, dotY, x + 2, dotY);
-      }
-      // Store Y position for later page number writing
-      tocEntries.push({ name, y });
-      y += 16;
-    });
-    y += 10;
-    doc.line(40, y, pageWidth - 40, y);
-    y += 30;
-
-    // Sections
-    const sectionPageNumbers = [];
-    sectionNames.forEach((name, idx) => {
-      // If we're about to overflow, add a page
-      if (y > 700) {
-        doc.addPage();
-        y = 40;
-      }
-      // Record page number for TOC after any page break
-      sectionPageNumbers.push({ name, page: doc.getCurrentPageInfo().pageNumber });
-      doc.setFontSize(13);
-      doc.setFont(undefined, "bold");
-      doc.text(`${idx + 1}. ${name.toUpperCase()}`, 50, y);
-      y += 18;
-      doc.setFontSize(12);
-      doc.setFont(undefined, "normal");
-      const content = draftData.sections[name] || "";
-      const lines = doc.splitTextToSize(content, pageWidth - 100);
-      doc.text(lines, 60, y);
-      y += lines.length * 14 + 18;
-      if (y > 700 && idx < sectionNames.length - 1) {
-        doc.addPage();
-        y = 40;
-      }
-    });
-
-    // After all sections, go back and write page numbers in TOC
-    doc.setPage(1);
-    doc.setFontSize(13);
-    doc.setFont(undefined, "normal");
-    tocEntries.forEach((entry, idx) => {
-      const pageNum = sectionPageNumbers.find(s => s.name === entry.name)?.page || 1;
-      const pageText = `Page ${pageNum}`;
-      doc.text(pageText, pageWidth - 80, entry.y, { align: "right" });
-    });
-
-    // Add footer only to the last page
-    const pageCount = doc.getNumberOfPages();
-    doc.setPage(pageCount);
-    doc.setFontSize(10);
-    doc.setTextColor(120);
-    doc.text(
-      "Generated by AI. Please review and edit as needed before submission.",
-      pageWidth / 2,
-      doc.internal.pageSize.getHeight() - 20,
-      { align: "center" }
-    );
-
-    doc.save("grant-application.pdf");
   };
 
   return (
