@@ -95,27 +95,23 @@ const ReviewApplication: React.FC<ReviewApplicationProps> = ({
     onNavigate("sections");
   };
 
-  const handleExportPDF = async () => {
-    // Gather all application data
-    let draftData = null;
-    if (appContext && selectedNofo) {
-      try {
-        const apiClient = new ApiClient(appContext);
-        const username = (await Auth.currentAuthenticatedUser()).username;
-        draftData = await apiClient.drafts.getDraft({
-          sessionId: sessionId,
-          userId: username
-        });
-      } catch (error) {
-        console.error("Error fetching draft for PDF export:", error);
-        alert("Failed to fetch draft data for export.");
-        return;
-      }
-    }
-    if (!draftData) {
-      alert("No draft data available for export.");
-      return;
-    }
+  /**
+   * Generate accessible HTML structure from draft data
+   * Uses semantic HTML elements and proper heading hierarchy for accessibility
+   */
+  const generateAccessibleHTML = (draftData: any): string => {
+    const sectionNames = draftData.sections ? Object.keys(draftData.sections) : [];
+    
+    // Escape HTML to prevent XSS
+    const escapeHtml = (text: string): string => {
+      if (!text) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
 
     try {
       const apiClient = new ApiClient(appContext!);

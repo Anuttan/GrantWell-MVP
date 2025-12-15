@@ -359,6 +359,18 @@ export class ChatBotApi extends Construct {
       authorizer: httpAuthorizer,
     });
 
+    // Add REST API route for generating accessible PDFs
+    const generateAccessiblePdfAPIIntegration = new HttpLambdaIntegration(
+      "GenerateAccessiblePdfAPIIntegration",
+      lambdaFunctions.generateAccessiblePdfFunction
+    );
+    restBackend.restAPI.addRoutes({
+      path: "/generate-accessible-pdf",
+      methods: [apigwv2.HttpMethod.POST],
+      integration: generateAccessiblePdfAPIIntegration,
+      authorizer: httpAuthorizer,
+    });
+
     const inviteUserFunction = new lambda.Function(this, "InviteUserFunction", {
       runtime: lambda.Runtime.NODEJS_18_X,
       code: lambda.Code.fromAsset(
