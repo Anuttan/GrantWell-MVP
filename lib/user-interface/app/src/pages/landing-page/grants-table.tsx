@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { v4 as uuidv4 } from "uuid";
 import { LuFileX } from "react-icons/lu";
 import { NOFO, GRANT_TYPES, GrantTypeId } from "../Dashboard";
 import { Utils } from "../../common/utils";
+import { addToRecentlyViewed } from "../../utils/recently-viewed-nofos";
 import "../../styles/landing-page-table.css";
 
 interface GrantsTableProps {
@@ -9,14 +12,28 @@ interface GrantsTableProps {
   loading: boolean;
   onSelectDocument: (document: { label: string; value: string }) => void;
   onSearchTermChange?: (term: string) => void;
+  selectedDocument: { label: string; value: string } | null;
+  highlightCTAButtons?: boolean;
+  onHighlightCTAButtons?: (highlight: boolean) => void;
 }
 
-export const GrantsTable: React.FC<GrantsTableProps> = ({ nofos, loading, onSelectDocument, onSearchTermChange }) => {
+export const GrantsTable: React.FC<GrantsTableProps> = ({ 
+  nofos, 
+  loading, 
+  onSelectDocument, 
+  onSearchTermChange,
+  selectedDocument,
+  highlightCTAButtons = false,
+  onHighlightCTAButtons
+}) => {
+  const navigate = useNavigate();
+  const firstCTAButtonRef = useRef<HTMLButtonElement>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "archived">("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [grantTypeFilter, setGrantTypeFilter] = useState<GrantTypeId | "all">("all");
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 20;
+  const itemsPerPage = 10;
 
   const uniqueCategories = Array.from(
     new Set(nofos.map((nofo) => nofo.category).filter((category): category is string => !!category))
@@ -37,9 +54,15 @@ export const GrantsTable: React.FC<GrantsTableProps> = ({ nofos, loading, onSele
     return nofos.filter((nofo) => nofo.grantType === grantType).length;
   };
 
-  // Filter NOFOs based on filters
+  // Filter NOFOs based on search query and filters
   const getFilteredNofos = () => {
     let filtered = nofos.filter((nofo) => {
+      // Search query filter
+      const matchesSearch = searchQuery.trim() === "" || 
+        nofo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (nofo.agency && nofo.agency.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (nofo.category && nofo.category.toLowerCase().includes(searchQuery.toLowerCase()));
+      
       // Status filter
       const matchesStatus = statusFilter === "all" || nofo.status === statusFilter;
       
@@ -49,7 +72,7 @@ export const GrantsTable: React.FC<GrantsTableProps> = ({ nofos, loading, onSele
       // Grant type filter
       const matchesGrantType = grantTypeFilter === "all" || nofo.grantType === grantTypeFilter;
 
-      return matchesStatus && matchesCategory && matchesGrantType;
+      return matchesSearch && matchesStatus && matchesCategory && matchesGrantType;
     });
 
     // Sort: pinned first, then alphabetically
@@ -70,10 +93,27 @@ export const GrantsTable: React.FC<GrantsTableProps> = ({ nofos, loading, onSele
   const endIndex = startIndex + itemsPerPage;
   const paginatedNofos = filteredNofos.slice(startIndex, endIndex);
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when filters or search change
   useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilter, categoryFilter, grantTypeFilter]);
+  }, [statusFilter, categoryFilter, grantTypeFilter, searchQuery]);
+  
+  // Update parent search term when search query changes
+  useEffect(() => {
+    if (onSearchTermChange) {
+      onSearchTermChange(searchQuery);
+    }
+  }, [searchQuery, onSearchTermChange]);
+  
+  // Sync search bar with selected document
+  useEffect(() => {
+    if (selectedDocument && selectedDocument.label) {
+      // Only update if the search query doesn't already match
+      if (searchQuery !== selectedDocument.label) {
+        setSearchQuery(selectedDocument.label);
+      }
+    }
+  }, [selectedDocument]);
 
   // Handle row click to select document (same as search bar)
   const handleRowClick = (nofo: NOFO) => {
@@ -93,21 +133,50 @@ export const GrantsTable: React.FC<GrantsTableProps> = ({ nofos, loading, onSele
       setGrantTypeFilter(nofo.grantType);
     }
     
-    // Update the search bar with the grant name first (so dropdown recognizes it)
+    // Update the search query with the grant name
+    setSearchQuery(nofo.name);
+    
+    // Update parent search term
     if (onSearchTermChange) {
       onSearchTermChange(nofo.name);
     }
     
-    // Then select the document (this will update the dropdown and show CTA buttons)
+    // Then select the document (this will show CTA buttons)
     onSelectDocument(selectedDoc);
     
-    // Scroll to top to show the CTA buttons after state updates complete
+    // Highlight CTA buttons and scroll to them
+    if (onHighlightCTAButtons) {
+      onHighlightCTAButtons(true);
+      setTimeout(() => {
+        onHighlightCTAButtons(false);
+      }, 2000);
+    }
+    
+    // Scroll to CTA buttons after state updates complete
     setTimeout(() => {
-      // Try multiple scroll methods for cross-browser compatibility
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      document.documentElement.scrollTo({ top: 0, behavior: "smooth" });
-      document.body.scrollTo({ top: 0, behavior: "smooth" });
+      if (firstCTAButtonRef.current) {
+        firstCTAButtonRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        firstCTAButtonRef.current.focus();
+      }
     }, 150);
+  };
+  
+  // Handle NOFO selection for navigation
+  const handleNOFOSelect = (href: string, selectedNOFO: { label: string; value: string }) => {
+    const updatedHistory = addToRecentlyViewed(selectedNOFO);
+    navigate(href);
+  };
+  
+  // Handle clearing the search and selection
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    onSelectDocument(null);
+    if (onSearchTermChange) {
+      onSearchTermChange("");
+    }
+    if (onHighlightCTAButtons) {
+      onHighlightCTAButtons(false);
+    }
   };
 
   if (loading) {
@@ -120,6 +189,274 @@ export const GrantsTable: React.FC<GrantsTableProps> = ({ nofos, loading, onSele
 
   return (
     <div className="landing-grants-table-container">
+      {/* Search Bar */}
+      <div className="landing-table-search-wrapper" style={{ marginBottom: "20px" }}>
+        <label htmlFor="grant-table-search" className="landing-filter-label" style={{ marginBottom: "8px", display: "block" }}>
+          Search grants
+        </label>
+        <div style={{ position: "relative" }}>
+          <input
+            id="grant-table-search"
+            type="text"
+            placeholder="Search by grant name, agency, or category..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="landing-table-search-input"
+            style={{
+              width: "100%",
+              padding: "10px 40px 10px 40px",
+              border: "1px solid #e0e0e0",
+              borderRadius: "6px",
+              fontSize: "14px",
+              transition: "all 0.2s ease",
+            }}
+            onFocus={(e) => {
+              e.target.style.outline = "none";
+              e.target.style.borderColor = "#14558F";
+              e.target.style.boxShadow = "0 0 0 3px rgba(20, 85, 143, 0.1)";
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = "#e0e0e0";
+              e.target.style.boxShadow = "none";
+            }}
+            aria-label="Search grants by name, agency, or category"
+          />
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{
+              position: "absolute",
+              left: "12px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              pointerEvents: "none",
+            }}
+          >
+            <path
+              d="M7 12C9.76142 12 12 9.76142 12 7C12 4.23858 9.76142 2 7 2C4.23858 2 2 4.23858 2 7C2 9.76142 4.23858 12 7 12Z"
+              stroke="#14558F"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M10.5 10.5L14 14"
+              stroke="#14558F"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          {/* Clear button (X) */}
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              aria-label="Clear search and selection"
+              style={{
+                position: "absolute",
+                right: "12px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "4px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "4px",
+                transition: "background-color 0.2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#f0f0f0";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.outline = "2px solid #0088FF";
+                e.currentTarget.style.outlineOffset = "2px";
+                e.currentTarget.style.backgroundColor = "#f0f0f0";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.outline = "none";
+                e.currentTarget.style.backgroundColor = "transparent";
+              }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M12 4L4 12M4 4L12 12"
+                  stroke="#666"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* CTA Buttons - shown when grant is selected */}
+      {selectedDocument && (
+        <nav
+          aria-label="Grant actions"
+          className={`cta-buttons-container${highlightCTAButtons ? " highlight" : ""}`}
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            gap: "10px",
+            margin: highlightCTAButtons ? "0 0 20px 0" : "0 0 20px 0",
+            width: "100%",
+            justifyContent: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <button
+            ref={firstCTAButtonRef}
+            onClick={() => {
+              handleNOFOSelect(
+                `/requirements/${encodeURIComponent(
+                  selectedDocument.value
+                )}`,
+                selectedDocument
+              );
+            }}
+            style={{
+              background: "#14558F",
+              color: "white",
+              border: "none",
+              borderRadius: "20px",
+              padding: "10px 22px",
+              fontSize: "15px",
+              fontWeight: 500,
+              cursor: "pointer",
+              transition: "background 0.2s, box-shadow 0.2s, outline 0.2s",
+              minWidth: "180px",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#104472";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#14558F";
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.outline = "2px solid #0088FF";
+              e.currentTarget.style.outlineOffset = "2px";
+              e.currentTarget.style.boxShadow =
+                "0 0 0 4px rgba(44, 79, 219, 0.2)";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.outline = "none";
+              e.currentTarget.style.outlineOffset = "0px";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+            aria-label="View Key Requirements"
+          >
+            View Key Requirements
+          </button>
+
+          <button
+            onClick={() => {
+              // Track the NOFO as recently viewed before navigating to document editor
+              addToRecentlyViewed(selectedDocument);
+
+              // Navigate to document editor
+              window.location.href = `/document-editor?nofo=${encodeURIComponent(
+                selectedDocument.value
+              )}`;
+            }}
+            style={{
+              background: "#14558F",
+              color: "white",
+              border: "none",
+              borderRadius: "20px",
+              padding: "10px 22px",
+              fontSize: "15px",
+              fontWeight: 500,
+              cursor: "pointer",
+              transition: "background 0.2s, box-shadow 0.2s, outline 0.2s",
+              minWidth: "180px",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#104472";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#14558F";
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.outline = "2px solid #0088FF";
+              e.currentTarget.style.outlineOffset = "2px";
+              e.currentTarget.style.boxShadow =
+                "0 0 0 4px rgba(44, 79, 219, 0.2)";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.outline = "none";
+              e.currentTarget.style.outlineOffset = "0px";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+            aria-label="Write Project Narrative"
+          >
+            Write Project Narrative
+          </button>
+
+          <button
+            onClick={() => {
+              // Track the NOFO as recently viewed before navigating to chatbot
+              addToRecentlyViewed(selectedDocument);
+
+              // Navigate to chatbot
+              const newSessionId = uuidv4();
+              window.location.href = `/chat/${newSessionId}?folder=${encodeURIComponent(
+                selectedDocument.value
+              )}`;
+            }}
+            style={{
+              background: "#14558F",
+              color: "white",
+              border: "none",
+              borderRadius: "20px",
+              padding: "10px 22px",
+              fontSize: "15px",
+              fontWeight: 500,
+              cursor: "pointer",
+              transition: "background 0.2s, box-shadow 0.2s, outline 0.2s",
+              minWidth: "180px",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#104472";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#14558F";
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.outline = "2px solid #0088FF";
+              e.currentTarget.style.outlineOffset = "2px";
+              e.currentTarget.style.boxShadow =
+                "0 0 0 4px rgba(44, 79, 219, 0.2)";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.outline = "none";
+              e.currentTarget.style.outlineOffset = "0px";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+            aria-label="Get Grant Help"
+          >
+            Get Grant Help
+          </button>
+        </nav>
+      )}
+
       {/* Filter Dropdowns */}
       <div className="landing-table-filters">
         <div className="landing-filter-dropdown-wrapper">

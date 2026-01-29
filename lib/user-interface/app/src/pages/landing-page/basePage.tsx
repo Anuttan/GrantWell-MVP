@@ -5,7 +5,8 @@ import { ApiClient } from "../../common/api-client/api-client";
 import { AppContext } from "../../common/app-context";
 import { v4 as uuidv4 } from "uuid";
 import "../../styles/base-page.css";
-import IntegratedSearchBar from "../../components/search/IntegratedSearchBar";
+// Temporarily hidden - uncomment to restore AI search bar
+// import IntegratedSearchBar from "../../components/search/IntegratedSearchBar";
 import {
   addToRecentlyViewed,
   getRecentlyViewed,
@@ -29,7 +30,6 @@ export default function Welcome() {
   const [highlightCTAButtons, setHighlightCTAButtons] = useState(false);
   const [srAnnouncement, setSrAnnouncement] = useState("");
   const prevSelectedDocRef = useRef<any>(null);
-  const firstCTAButtonRef = useRef<HTMLButtonElement>(null);
 
   // **Context and Navigation**
   const appContext = useContext(AppContext);
@@ -151,15 +151,7 @@ export default function Welcome() {
         `${selectedDocument.label} selected. Choose an action: View Key Requirements, Write Project Narrative, or Get Grant Help.`
       );
       
-      // Focus management for keyboard users (WCAG 2.4.3 - Focus Order)
-      // Delay focus to allow scroll to complete
-      const focusTimer = setTimeout(() => {
-        if (firstCTAButtonRef.current) {
-          firstCTAButtonRef.current.focus();
-        }
-      }, 300);
-      
-      // Remove highlight after animation completes
+      // Remove highlight after animation completes (handled by table component)
       const highlightTimer = setTimeout(() => {
         setHighlightCTAButtons(false);
       }, 2000); // 2 seconds for the full animation cycle
@@ -171,7 +163,6 @@ export default function Welcome() {
       
       prevSelectedDocRef.current = selectedDocument;
       return () => {
-        clearTimeout(focusTimer);
         clearTimeout(highlightTimer);
         clearTimeout(announcementTimer);
       };
@@ -860,14 +851,14 @@ export default function Welcome() {
           </p>
         </div>
 
-        {/* New integrated search bar */}
-        <IntegratedSearchBar
+        {/* Temporarily hidden - uncomment to restore AI search bar */}
+        {/* <IntegratedSearchBar
           documents={documents}
           onSelectDocument={setSelectedDocument}
           isLoading={loading}
           searchTerm={searchTerm}
           onSearchTermChange={setSearchTerm}
-        />
+        /> */}
 
         {/* Screen reader announcement for grant selection (WCAG 4.1.3) */}
         <div
@@ -889,158 +880,6 @@ export default function Welcome() {
         >
           {srAnnouncement}
         </div>
-
-        {/* CTA Buttons - shown when grant is selected */}
-        {selectedDocument && (
-          <nav
-            aria-label="Grant actions"
-            className={`cta-buttons-container${highlightCTAButtons ? " highlight" : ""}`}
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              gap: "10px",
-              margin: highlightCTAButtons ? "20px 0 8px 0" : "28px 0 8px 0",
-              width: "100%",
-              justifyContent: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <button
-              ref={firstCTAButtonRef}
-              onClick={() => {
-                handleNOFOSelect(
-                  `/requirements/${encodeURIComponent(
-                    selectedDocument.value
-                  )}`,
-                  selectedDocument
-                );
-              }}
-              style={{
-                background: "#14558F",
-                color: "white",
-                border: "none",
-                borderRadius: "20px",
-                padding: "10px 22px",
-                fontSize: "15px",
-                fontWeight: 500,
-                cursor: "pointer",
-                transition: "background 0.2s, box-shadow 0.2s, outline 0.2s",
-                minWidth: "180px",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#104472";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#14558F";
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.outline = "2px solid #0088FF";
-                e.currentTarget.style.outlineOffset = "2px";
-                e.currentTarget.style.boxShadow =
-                  "0 0 0 4px rgba(44, 79, 219, 0.2)";
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.outline = "none";
-                e.currentTarget.style.outlineOffset = "0px";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-              aria-label="View Key Requirements"
-            >
-              View Key Requirements
-            </button>
-
-            <button
-              onClick={() => {
-                // Track the NOFO as recently viewed before navigating to document editor
-                const updatedHistory = addToRecentlyViewed(selectedDocument);
-                setRecentlyViewedNOFOs(updatedHistory);
-
-                // Navigate to document editor
-                window.location.href = `/document-editor?nofo=${encodeURIComponent(
-                  selectedDocument.value
-                )}`;
-              }}
-              style={{
-                background: "#14558F",
-                color: "white",
-                border: "none",
-                borderRadius: "20px",
-                padding: "10px 22px",
-                fontSize: "15px",
-                fontWeight: 500,
-                cursor: "pointer",
-                transition: "background 0.2s, box-shadow 0.2s, outline 0.2s",
-                minWidth: "180px",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#104472";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#14558F";
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.outline = "2px solid #0088FF";
-                e.currentTarget.style.outlineOffset = "2px";
-                e.currentTarget.style.boxShadow =
-                  "0 0 0 4px rgba(44, 79, 219, 0.2)";
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.outline = "none";
-                e.currentTarget.style.outlineOffset = "0px";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-              aria-label="Write Project Narrative"
-            >
-              Write Project Narrative
-            </button>
-
-            <button
-              onClick={() => {
-                // Track the NOFO as recently viewed before navigating to chatbot
-                const updatedHistory = addToRecentlyViewed(selectedDocument);
-                setRecentlyViewedNOFOs(updatedHistory);
-
-                // Navigate to chatbot
-                const newSessionId = uuidv4();
-                window.location.href = `/chat/${newSessionId}?folder=${encodeURIComponent(
-                  selectedDocument.value
-                )}`;
-              }}
-              style={{
-                background: "#14558F",
-                color: "white",
-                border: "none",
-                borderRadius: "20px",
-                padding: "10px 22px",
-                fontSize: "15px",
-                fontWeight: 500,
-                cursor: "pointer",
-                transition: "background 0.2s, box-shadow 0.2s, outline 0.2s",
-                minWidth: "180px",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#104472";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#14558F";
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.outline = "2px solid #0088FF";
-                e.currentTarget.style.outlineOffset = "2px";
-                e.currentTarget.style.boxShadow =
-                  "0 0 0 4px rgba(44, 79, 219, 0.2)";
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.outline = "none";
-                e.currentTarget.style.outlineOffset = "0px";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-              aria-label="Get Grant Help"
-            >
-              Get Grant Help
-            </button>
-          </nav>
-        )}
 
         {/* How it works section - always visible */}
         <section
@@ -1075,7 +914,7 @@ export default function Welcome() {
               margin: "0",
             }}
           >
-            Search for a grant above, select one from the results, then choose
+            Use the search bar and filters below to find a grant, select one from the table, then choose
             an action:{" "}
             <strong style={{ color: "#14558F", fontWeight: "600" }}>
               View Key Requirements
@@ -1107,12 +946,7 @@ export default function Welcome() {
             role="note"
             aria-label="Screen reader navigation note"
           >
-            Screen-reader note: The search bar is the first interactive element
-            on this page. You can search for grants by describing what you need, or
-            use the filters below the "OR" divider to browse grants by status,
-            category, or grant type. After selecting a grant from search results or
-            the table, action buttons will appear above. Use heading navigation to
-            explore the content on each screen.
+            Screen-reader note: Use the search bar and filters to find grants. Click on any grant in the table to select it. Action buttons will appear below the search bar. Use the X button to clear your selection and choose another grant.
           </div>
         </section>
 
@@ -1166,15 +1000,19 @@ export default function Welcome() {
               margin: "0",
             }}
           >
-            Use the filters below to narrow down grants by{" "}
+            Use the search bar and filters below to find grants by name,{" "}
+            <strong style={{ color: "#14558F", fontWeight: "600" }}>
+              Status
+            </strong>
+            ,{" "}
             <strong style={{ color: "#14558F", fontWeight: "600" }}>
               Category
             </strong>
-            {" "}or{" "}            
+            , or{" "}            
             <strong style={{ color: "#14558F", fontWeight: "600" }}>
               Grant Type
             </strong>
-            <br/>Click on any grant to select it and view available actions.
+            . Click on any grant in the table to select it and view available actions.
           </p>
         </section>
 
@@ -1206,6 +1044,9 @@ export default function Welcome() {
               loading={loading} 
               onSelectDocument={setSelectedDocument}
               onSearchTermChange={setSearchTerm}
+              selectedDocument={selectedDocument}
+              highlightCTAButtons={highlightCTAButtons}
+              onHighlightCTAButtons={setHighlightCTAButtons}
             />
           </section>
         </ContentBox>
