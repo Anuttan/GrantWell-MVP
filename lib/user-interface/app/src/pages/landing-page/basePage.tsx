@@ -11,7 +11,7 @@ import {
   addToRecentlyViewed,
   getRecentlyViewed,
   cleanupRecentlyViewed,
-} from "../../utils/recently-viewed-nofos";
+} from "../../common/helpers/recently-viewed-nofos";
 import { GrantsTable } from "./grants-table";
 import { NOFO } from "../Dashboard";
 
