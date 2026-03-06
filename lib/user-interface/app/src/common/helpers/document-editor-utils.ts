@@ -37,7 +37,7 @@ export const EDITOR_STEPS = [
   { id: "questionnaire", label: "Questionnaire", description: "Answer questions", tooltip: "Answer NOFO-specific questions about your project. These responses will help generate your grant application." },
   { id: "uploadDocuments", label: "Additional Information", description: "Additional context", tooltip: "Share any additional context or information that will help generate your grant application." },
   { id: "sectionEditor", label: "Section Editor", description: "Edit sections", tooltip: "Review and edit AI-generated narrative sections. You can regenerate individual sections or edit them directly." },
-  { id: "reviewApplication", label: "Review", description: "Final review", tooltip: "Review your complete application, check compliance, and export as PDF when ready." },
+  { id: "reviewApplication", label: "Review", description: "Final review", tooltip: "Review your complete application, check completeness, and export as PDF when ready." },
 ] as const;
 
 /** Map a step ID to its zero-based index. */
