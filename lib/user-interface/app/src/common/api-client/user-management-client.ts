@@ -91,11 +91,18 @@ export class UserManagementClient {
     return data;
   }
 
-  async searchFeatureRolloutUsers(featureKey: string, query: string): Promise<FeatureRolloutSearchResponse> {
+  async searchFeatureRolloutUsers(
+    featureKey: string,
+    query: string,
+    role: "" | "admin" | "developer"
+  ): Promise<FeatureRolloutSearchResponse> {
     const headers = await this.getAuthHeaders();
     const url = new URL(`${this.baseUrl}/feature-rollouts/${encodeURIComponent(featureKey)}/users`);
     if (query.trim().length > 0) {
       url.searchParams.set("query", query.trim());
+    }
+    if (role) {
+      url.searchParams.set("role", role);
     }
 
     const response = await fetch(url, {

@@ -314,7 +314,7 @@ const Dashboard: React.FC = () => {
                 aria-controls="dashboard-panel-rollouts"
                 tabIndex={activeTab === "feature-rollouts" ? 0 : -1}
               >
-                Developer Rollouts
+                Feature Rollouts
               </button>
             )}
           </div>

@@ -225,6 +225,10 @@ body {
   gap: 8px;
 }
 
+.feature-rollouts-search-field--role {
+  max-width: 220px;
+}
+
 .feature-rollouts-search-label {
   color: var(--mds-color-heading);
   font-size: var(--mds-font-size-sm);

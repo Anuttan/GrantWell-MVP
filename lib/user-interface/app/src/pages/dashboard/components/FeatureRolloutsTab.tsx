@@ -31,8 +31,10 @@ const FeatureRolloutsTab: React.FC<FeatureRolloutsTabProps> = ({
   const [loading, setLoading] = useState(true);
   const [savingToggle, setSavingToggle] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<"" | "admin" | "developer">("");
   const [searchingUsers, setSearchingUsers] = useState(false);
   const [searchResults, setSearchResults] = useState<FeatureRolloutSearchUser[]>([]);
+  const [hasSearchedUsers, setHasSearchedUsers] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
   const loadConfig = useCallback(async () => {
@@ -82,9 +84,11 @@ const FeatureRolloutsTab: React.FC<FeatureRolloutsTabProps> = ({
       setSearchingUsers(true);
       const response = await apiClient.userManagement.searchFeatureRolloutUsers(
         FEATURE_KEY,
-        searchQuery
+        searchQuery,
+        roleFilter
       );
       setSearchResults(response.users);
+      setHasSearchedUsers(true);
     } catch (error) {
       console.error("Error searching users:", error);
       addNotification("error", "Failed to search users");
@@ -147,6 +151,7 @@ const FeatureRolloutsTab: React.FC<FeatureRolloutsTabProps> = ({
     () => [...searchResults].sort((a, b) => a.email.localeCompare(b.email)),
     [searchResults]
   );
+  const selectedRoleLabel = roleFilter === "admin" ? "Admin" : roleFilter === "developer" ? "Developer" : "User";
 
   if (loading) {
     return <div className="feature-rollouts-panel">Loading feature rollouts...</div>;
@@ -184,84 +189,26 @@ const FeatureRolloutsTab: React.FC<FeatureRolloutsTabProps> = ({
         </div>
       </div>
 
-      <div className="feature-rollouts-card">
-        <section className="feature-rollouts-section">
-          <div className="feature-rollouts-section-header">
-            <h3>Allowlisted Users</h3>
-            <p>Used only when rollout mode is set to allowlisted users only.</p>
-          </div>
-          {config.users.length === 0 ? (
-            <p className="feature-rollouts-empty">No users have AI search beta access yet.</p>
-          ) : (
-            <div className="feature-rollouts-list">
-              {config.users.map((user) => (
-                <div key={user.email} className="feature-rollouts-list-item">
-                  <div>
-                    <div className="feature-rollouts-email">{user.email}</div>
-                    <div className="feature-rollouts-detail">
-                      Added {user.grantedAt ? Utils.formatTimestamp(user.grantedAt) : "recently"}
-                      {user.grantedBy ? ` by ${user.grantedBy}` : ""}
-                    </div>
-                  </div>
-                  <button
-                    className="feature-rollouts-secondary-button"
-                    onClick={() => handleRevokeAccess(user.email)}
-                    disabled={pendingEmail === user.email}
-                  >
-                    {pendingEmail === user.email ? "Removing..." : "Remove"}
-                  </button>
-                </div>
-              ))}
+      {config.mode === "allowlisted" ? (
+        <div className="feature-rollouts-card">
+          <section className="feature-rollouts-section">
+            <div className="feature-rollouts-section-header">
+              <h3>Allowlisted Users</h3>
+              <p>Manage the users who should see AI search in allowlisted mode.</p>
             </div>
-          )}
-        </section>
-
-        <section className="feature-rollouts-section">
-          <div className="feature-rollouts-section-header">
-            <h3>Search Users</h3>
-            <p>Search Cognito users by email and grant access individually.</p>
-          </div>
-
-          <div className="feature-rollouts-search">
-            <div className="feature-rollouts-search-field">
-              <label htmlFor="feature-rollouts-user-search" className="feature-rollouts-search-label">
-                User email search
-              </label>
-              <input
-                id="feature-rollouts-user-search"
-                type="text"
-                className="feature-rollouts-search-input"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search by email"
-              />
-            </div>
-            <button
-              className="feature-rollouts-primary-button"
-              onClick={handleSearchUsers}
-              disabled={searchingUsers}
-              type="button"
-            >
-              {searchingUsers ? "Searching..." : "Search"}
-            </button>
-          </div>
-
-          {sortedResults.length === 0 ? (
-            <p className="feature-rollouts-empty">
-              Search for users to grant or revoke AI search beta access.
-            </p>
-          ) : (
-            <div className="feature-rollouts-list">
-              {sortedResults.map((user) => (
-                <div key={user.email} className="feature-rollouts-list-item">
-                  <div>
-                    <div className="feature-rollouts-email">{user.email}</div>
-                    <div className="feature-rollouts-detail">
-                      {user.status}
-                      {user.roles.length > 0 ? ` • Roles: ${user.roles.join(", ")}` : ""}
+            {config.users.length === 0 ? (
+              <p className="feature-rollouts-empty">No users have AI search beta access yet.</p>
+            ) : (
+              <div className="feature-rollouts-list">
+                {config.users.map((user) => (
+                  <div key={user.email} className="feature-rollouts-list-item">
+                    <div>
+                      <div className="feature-rollouts-email">{user.email}</div>
+                      <div className="feature-rollouts-detail">
+                        Added {user.grantedAt ? Utils.formatTimestamp(user.grantedAt) : "recently"}
+                        {user.grantedBy ? ` by ${user.grantedBy}` : ""}
+                      </div>
                     </div>
-                  </div>
-                  {user.hasAccess ? (
                     <button
                       className="feature-rollouts-secondary-button"
                       onClick={() => handleRevokeAccess(user.email)}
@@ -269,21 +216,102 @@ const FeatureRolloutsTab: React.FC<FeatureRolloutsTabProps> = ({
                     >
                       {pendingEmail === user.email ? "Removing..." : "Remove"}
                     </button>
-                  ) : (
-                    <button
-                      className="feature-rollouts-primary-button"
-                      onClick={() => handleGrantAccess(user.email)}
-                      disabled={pendingEmail === user.email}
-                    >
-                      {pendingEmail === user.email ? "Granting..." : "Grant Access"}
-                    </button>
-                  )}
-                </div>
-              ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="feature-rollouts-section">
+            <div className="feature-rollouts-section-header">
+              <h3>Search Users</h3>
+              <p>Search Cognito users by email and filter by role before allowlisting them.</p>
             </div>
-          )}
-        </section>
-      </div>
+
+            <div className="feature-rollouts-search">
+              <div className="feature-rollouts-search-field">
+                <label htmlFor="feature-rollouts-user-search" className="feature-rollouts-search-label">
+                  User email search
+                </label>
+                <input
+                  id="feature-rollouts-user-search"
+                  type="text"
+                  className="feature-rollouts-search-input"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search by email"
+                />
+              </div>
+              <div className="feature-rollouts-search-field feature-rollouts-search-field--role">
+                <label htmlFor="feature-rollouts-role-filter" className="feature-rollouts-search-label">
+                  Role filter
+                </label>
+                <select
+                  id="feature-rollouts-role-filter"
+                  className="feature-rollouts-search-input"
+                  value={roleFilter}
+                  onChange={(event) => setRoleFilter(event.target.value as "" | "admin" | "developer")}
+                >
+                  <option value="">User</option>
+                  <option value="admin">Admin</option>
+                  <option value="developer">Developer</option>
+                </select>
+              </div>
+              <button
+                className="feature-rollouts-primary-button"
+                onClick={handleSearchUsers}
+                disabled={searchingUsers}
+                type="button"
+              >
+                {searchingUsers ? "Searching..." : "Search"}
+              </button>
+            </div>
+
+            {sortedResults.length === 0 ? (
+              hasSearchedUsers ? (
+                <p className="feature-rollouts-empty">
+                  No {selectedRoleLabel.toLowerCase()} users found for this search.
+                </p>
+              ) : (
+                <p className="feature-rollouts-empty">
+                  Search for {selectedRoleLabel.toLowerCase()} users to grant or revoke AI search beta access.
+                </p>
+              )
+            ) : (
+              <div className="feature-rollouts-list">
+                {sortedResults.map((user) => (
+                  <div key={user.email} className="feature-rollouts-list-item">
+                    <div>
+                      <div className="feature-rollouts-email">{user.email}</div>
+                      <div className="feature-rollouts-detail">
+                        {user.status}
+                        {user.roles.length > 0 ? ` • Roles: ${user.roles.join(", ")}` : " • Role: User"}
+                      </div>
+                    </div>
+                    {user.hasAccess ? (
+                      <button
+                        className="feature-rollouts-secondary-button"
+                        onClick={() => handleRevokeAccess(user.email)}
+                        disabled={pendingEmail === user.email}
+                      >
+                        {pendingEmail === user.email ? "Removing..." : "Remove"}
+                      </button>
+                    ) : (
+                      <button
+                        className="feature-rollouts-primary-button"
+                        onClick={() => handleGrantAccess(user.email)}
+                        disabled={pendingEmail === user.email}
+                      >
+                        {pendingEmail === user.email ? "Granting..." : "Grant Access"}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 };

@@ -41,5 +41,6 @@ export interface FeatureRolloutSearchUser {
 export interface FeatureRolloutSearchResponse {
   featureKey: string;
   query: string;
+  role: string;
   users: FeatureRolloutSearchUser[];
 }
