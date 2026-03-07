@@ -1,4 +1,4 @@
-export type UserRolePreset = "user" | "admin" | "developer" | "admin-developer";
+export type UserRolePreset = "user" | "admin" | "developer";
 
 export interface ManagedUser {
   username: string;

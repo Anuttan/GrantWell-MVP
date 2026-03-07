@@ -3,7 +3,7 @@ import { Auth } from "aws-amplify";
 import { hasRole, parseRoleClaim } from "../common/helpers/auth-roles";
 
 /**
- * Checks whether the current authenticated user has the Admin role.
+ * Checks whether the current authenticated user can access admin features.
  *
  * Reads `custom:role` from the Cognito ID token.
  *
@@ -30,10 +30,11 @@ export function useAdminCheck(): {
         const parsedRoles = parseRoleClaim(
           result?.signInUserSession?.idToken?.payload["custom:role"]
         );
+        const hasDeveloperRole = hasRole(parsedRoles, "Developer");
         if (!cancelled) {
           setRoles(parsedRoles);
-          setIsAdmin(hasRole(parsedRoles, "Admin"));
-          setIsDeveloper(hasRole(parsedRoles, "Developer"));
+          setIsAdmin(hasRole(parsedRoles, "Admin") || hasDeveloperRole);
+          setIsDeveloper(hasDeveloperRole);
         }
       } catch {
         if (!cancelled) {

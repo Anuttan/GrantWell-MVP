@@ -109,10 +109,10 @@ const Dashboard: React.FC = () => {
       const tabs = [
         { key: "grants" as const, ref: grantsTabRef },
         ...(isDeveloper
-          ? [
-              { key: "feature-rollouts" as const, ref: rolloutsTabRef },
-              { key: "user-management" as const, ref: userManagementTabRef },
-            ]
+          ? [{ key: "feature-rollouts" as const, ref: rolloutsTabRef }]
+          : []),
+        ...(isAdmin
+          ? [{ key: "user-management" as const, ref: userManagementTabRef }]
           : []),
       ];
       const currentIndex = tabs.findIndex((tab) => tab.key === activeTab);
@@ -140,7 +140,7 @@ const Dashboard: React.FC = () => {
         focusTabAt(tabs.length - 1);
       }
     },
-    [activeTab, isDeveloper]
+    [activeTab, isAdmin, isDeveloper]
   );
 
   const sendInvite = useCallback(async () => {
@@ -312,34 +312,34 @@ const Dashboard: React.FC = () => {
               Grants
             </button>
             {isDeveloper && (
-              <>
-                <button
-                  id="dashboard-tab-rollouts"
-                  ref={rolloutsTabRef}
-                  className={`tab-button ${activeTab === "feature-rollouts" ? "active" : ""}`}
-                  onClick={() => setActiveTab("feature-rollouts")}
-                  onKeyDown={handleTabKeyDown}
-                  role="tab"
-                  aria-selected={activeTab === "feature-rollouts"}
-                  aria-controls="dashboard-panel-rollouts"
-                  tabIndex={activeTab === "feature-rollouts" ? 0 : -1}
-                >
-                  Feature Rollouts
-                </button>
-                <button
-                  id="dashboard-tab-user-management"
-                  ref={userManagementTabRef}
-                  className={`tab-button ${activeTab === "user-management" ? "active" : ""}`}
-                  onClick={() => setActiveTab("user-management")}
-                  onKeyDown={handleTabKeyDown}
-                  role="tab"
-                  aria-selected={activeTab === "user-management"}
-                  aria-controls="dashboard-panel-user-management"
-                  tabIndex={activeTab === "user-management" ? 0 : -1}
-                >
-                  User Management
-                </button>
-              </>
+              <button
+                id="dashboard-tab-rollouts"
+                ref={rolloutsTabRef}
+                className={`tab-button ${activeTab === "feature-rollouts" ? "active" : ""}`}
+                onClick={() => setActiveTab("feature-rollouts")}
+                onKeyDown={handleTabKeyDown}
+                role="tab"
+                aria-selected={activeTab === "feature-rollouts"}
+                aria-controls="dashboard-panel-rollouts"
+                tabIndex={activeTab === "feature-rollouts" ? 0 : -1}
+              >
+                Feature Rollouts
+              </button>
+            )}
+            {isAdmin && (
+              <button
+                id="dashboard-tab-user-management"
+                ref={userManagementTabRef}
+                className={`tab-button ${activeTab === "user-management" ? "active" : ""}`}
+                onClick={() => setActiveTab("user-management")}
+                onKeyDown={handleTabKeyDown}
+                role="tab"
+                aria-selected={activeTab === "user-management"}
+                aria-controls="dashboard-panel-user-management"
+                tabIndex={activeTab === "user-management" ? 0 : -1}
+              >
+                User Management
+              </button>
             )}
           </div>
 
@@ -465,6 +465,7 @@ const Dashboard: React.FC = () => {
                 <UserManagementTab
                   apiClient={apiClient}
                   addNotification={addNotification}
+                  canAssignDeveloper={isDeveloper}
                 />
               </div>
             )}

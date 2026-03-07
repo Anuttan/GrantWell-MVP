@@ -6,13 +6,17 @@ import PaginationControls from "./PaginationControls";
 interface UserManagementTabProps {
   apiClient: ApiClient;
   addNotification: (type: "success" | "error" | "info" | "warning", message: string) => void;
+  canAssignDeveloper: boolean;
 }
 
-const roleOptions: Array<{ value: UserRolePreset; label: string }> = [
+const allRoleOptions: Array<{
+  value: UserRolePreset;
+  label: string;
+  requiresDeveloper?: boolean;
+}> = [
   { value: "user", label: "User" },
   { value: "admin", label: "Admin" },
-  { value: "developer", label: "Developer" },
-  { value: "admin-developer", label: "Admin + Developer" },
+  { value: "developer", label: "Developer", requiresDeveloper: true },
 ];
 
 function getRolePreset(roles: string[]): UserRolePreset {
@@ -20,14 +24,11 @@ function getRolePreset(roles: string[]): UserRolePreset {
   const isAdmin = normalizedRoles.includes("admin");
   const isDeveloper = normalizedRoles.includes("developer");
 
-  if (isAdmin && isDeveloper) {
-    return "admin-developer";
+  if (isDeveloper) {
+    return "developer";
   }
   if (isAdmin) {
     return "admin";
-  }
-  if (isDeveloper) {
-    return "developer";
   }
   return "user";
 }
@@ -35,6 +36,7 @@ function getRolePreset(roles: string[]): UserRolePreset {
 const UserManagementTab: React.FC<UserManagementTabProps> = ({
   apiClient,
   addNotification,
+  canAssignDeveloper,
 }) => {
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [draftRoles, setDraftRoles] = useState<Record<string, UserRolePreset>>({});
@@ -148,7 +150,12 @@ const UserManagementTab: React.FC<UserManagementTabProps> = ({
           <div>
             <span className="feature-rollouts-eyebrow">Developer Controls</span>
             <h2>User Management</h2>
-            <p>Edit user roles directly from the table below.</p>
+            <p>
+              Edit user roles directly from the table below.
+              {canAssignDeveloper
+                ? " Developers can assign all roles."
+                : " Admins can assign User or Admin roles only."}
+            </p>
           </div>
         </div>
 
@@ -198,8 +205,12 @@ const UserManagementTab: React.FC<UserManagementTabProps> = ({
                         }
                         disabled={isSaving}
                       >
-                        {roleOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
+                        {allRoleOptions.map((option) => (
+                          <option
+                            key={option.value}
+                            value={option.value}
+                            disabled={Boolean(option.requiresDeveloper && !canAssignDeveloper)}
+                          >
                             {option.label}
                           </option>
                         ))}
