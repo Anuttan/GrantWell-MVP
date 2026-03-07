@@ -430,6 +430,41 @@ export class ChatBotApi extends Construct {
       authorizer: httpAuthorizer,
     });
 
+    const manageUsersFunction = new lambda.Function(this, "ManageUsersFunction", {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, "functions/user-management/users")
+      ),
+      handler: "index.handler",
+      environment: {
+        USER_POOL_ID: props.authentication.userPool.userPoolId,
+      },
+      timeout: cdk.Duration.seconds(30),
+    });
+
+    props.authentication.userPool.grant(
+      manageUsersFunction,
+      "cognito-idp:ListUsers",
+      "cognito-idp:AdminUpdateUserAttributes"
+    );
+
+    const manageUsersIntegration = new HttpLambdaIntegration(
+      "ManageUsersIntegration",
+      manageUsersFunction
+    );
+    restBackend.restAPI.addRoutes({
+      path: "/user-management/users",
+      methods: [apigwv2.HttpMethod.GET],
+      integration: manageUsersIntegration,
+      authorizer: httpAuthorizer,
+    });
+    restBackend.restAPI.addRoutes({
+      path: "/user-management/users/{username}/roles",
+      methods: [apigwv2.HttpMethod.PATCH],
+      integration: manageUsersIntegration,
+      authorizer: httpAuthorizer,
+    });
+
     const featureRolloutFunction = new lambda.Function(this, "FeatureRolloutFunction", {
       runtime: lambda.Runtime.NODEJS_20_X,
       code: lambda.Code.fromAsset(

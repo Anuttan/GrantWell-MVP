@@ -7,6 +7,7 @@ import UnifiedNavigation from "../../components/navigation/UnifiedNavigation";
 import NOFOsTab from "./components/NOFOsTab";
 import PaginationControls from "./components/PaginationControls";
 import FeatureRolloutsTab from "./components/FeatureRolloutsTab";
+import UserManagementTab from "./components/UserManagementTab";
 import {
   LuSearch, LuFilter, LuMail, LuUpload, LuCheck, LuX,
   LuRefreshCw, LuDownload, LuInfo,
@@ -17,7 +18,7 @@ import type { RawNOFOData } from "../../common/types/document";
 import "../../styles/dashboard.css";
 
 const Dashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<"grants" | "feature-rollouts">("grants");
+  const [activeTab, setActiveTab] = useState<"grants" | "feature-rollouts" | "user-management">("grants");
   const [nofos, setNofos] = useState<NOFO[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
@@ -44,6 +45,7 @@ const Dashboard: React.FC = () => {
   const filterButtonRef = useRef<HTMLButtonElement>(null);
   const grantsTabRef = useRef<HTMLButtonElement>(null);
   const rolloutsTabRef = useRef<HTMLButtonElement>(null);
+  const userManagementTabRef = useRef<HTMLButtonElement>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -107,7 +109,10 @@ const Dashboard: React.FC = () => {
       const tabs = [
         { key: "grants" as const, ref: grantsTabRef },
         ...(isDeveloper
-          ? [{ key: "feature-rollouts" as const, ref: rolloutsTabRef }]
+          ? [
+              { key: "feature-rollouts" as const, ref: rolloutsTabRef },
+              { key: "user-management" as const, ref: userManagementTabRef },
+            ]
           : []),
       ];
       const currentIndex = tabs.findIndex((tab) => tab.key === activeTab);
@@ -242,6 +247,11 @@ const Dashboard: React.FC = () => {
   if (!isAdmin) return null;
 
   const filterCount = getActiveFilterCount();
+  const activeTabAnnouncement = activeTab === "grants"
+    ? "Grants tab selected"
+    : activeTab === "feature-rollouts"
+      ? "Developer rollouts tab selected"
+      : "Developer user management tab selected";
 
   return (
     <div className="dashboard-shell">
@@ -285,7 +295,7 @@ const Dashboard: React.FC = () => {
           )}
 
           <div className="visually-hidden" aria-live="polite">
-            {activeTab === "grants" ? "Grants tab selected" : "Developer rollouts tab selected"}
+            {activeTabAnnouncement}
           </div>
           <div className="tab-controls" role="tablist" aria-label="Dashboard sections">
             <button
@@ -302,19 +312,34 @@ const Dashboard: React.FC = () => {
               Grants
             </button>
             {isDeveloper && (
-              <button
-                id="dashboard-tab-rollouts"
-                ref={rolloutsTabRef}
-                className={`tab-button ${activeTab === "feature-rollouts" ? "active" : ""}`}
-                onClick={() => setActiveTab("feature-rollouts")}
-                onKeyDown={handleTabKeyDown}
-                role="tab"
-                aria-selected={activeTab === "feature-rollouts"}
-                aria-controls="dashboard-panel-rollouts"
-                tabIndex={activeTab === "feature-rollouts" ? 0 : -1}
-              >
-                Feature Rollouts
-              </button>
+              <>
+                <button
+                  id="dashboard-tab-rollouts"
+                  ref={rolloutsTabRef}
+                  className={`tab-button ${activeTab === "feature-rollouts" ? "active" : ""}`}
+                  onClick={() => setActiveTab("feature-rollouts")}
+                  onKeyDown={handleTabKeyDown}
+                  role="tab"
+                  aria-selected={activeTab === "feature-rollouts"}
+                  aria-controls="dashboard-panel-rollouts"
+                  tabIndex={activeTab === "feature-rollouts" ? 0 : -1}
+                >
+                  Feature Rollouts
+                </button>
+                <button
+                  id="dashboard-tab-user-management"
+                  ref={userManagementTabRef}
+                  className={`tab-button ${activeTab === "user-management" ? "active" : ""}`}
+                  onClick={() => setActiveTab("user-management")}
+                  onKeyDown={handleTabKeyDown}
+                  role="tab"
+                  aria-selected={activeTab === "user-management"}
+                  aria-controls="dashboard-panel-user-management"
+                  tabIndex={activeTab === "user-management" ? 0 : -1}
+                >
+                  User Management
+                </button>
+              </>
             )}
           </div>
 
@@ -418,7 +443,7 @@ const Dashboard: React.FC = () => {
                   onItemsPerPageChange={(e) => { setItemsPerPage(parseInt(e.target.value)); setCurrentPage(1); }}
                 />
               </div>
-            ) : (
+            ) : activeTab === "feature-rollouts" ? (
               <div
                 id="dashboard-panel-rollouts"
                 role="tabpanel"
@@ -426,6 +451,18 @@ const Dashboard: React.FC = () => {
                 tabIndex={0}
               >
                 <FeatureRolloutsTab
+                  apiClient={apiClient}
+                  addNotification={addNotification}
+                />
+              </div>
+            ) : (
+              <div
+                id="dashboard-panel-user-management"
+                role="tabpanel"
+                aria-labelledby="dashboard-tab-user-management"
+                tabIndex={0}
+              >
+                <UserManagementTab
                   apiClient={apiClient}
                   addNotification={addNotification}
                 />

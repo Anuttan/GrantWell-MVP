@@ -6,6 +6,7 @@ import type {
   FeatureRolloutMode,
   FeatureRolloutSearchResponse,
 } from "../types/feature-rollout";
+import type { ManagedUsersResponse, UserRolePreset } from "../types/user-management";
 
 export class UserManagementClient {
   private readonly baseUrl: string;
@@ -43,6 +44,40 @@ export class UserManagementClient {
       console.error('Error inviting user:', error);
       throw error;
     }
+  }
+
+  async listUsers(): Promise<ManagedUsersResponse> {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseUrl}/user-management/users`, {
+      method: "GET",
+      headers,
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || `Error: ${response.status}`);
+    }
+
+    return data;
+  }
+
+  async updateUserRole(username: string, rolePreset: UserRolePreset) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(
+      `${this.baseUrl}/user-management/users/${encodeURIComponent(username)}/roles`,
+      {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ rolePreset }),
+      }
+    );
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || `Error: ${response.status}`);
+    }
+
+    return data;
   }
 
   async getCurrentFeatureAccess(): Promise<CurrentFeatureRolloutAccess> {

@@ -236,11 +236,7 @@ body {
   padding: 18px;
   border: 1px solid var(--mds-color-border);
   border-radius: 16px;
-  background: linear-gradient(
-    180deg,
-    var(--mds-color-white) 0%,
-    var(--mds-color-primary-light) 100%
-  );
+  background: var(--mds-color-white);
 }
 
 .feature-rollouts-badge {
@@ -496,6 +492,96 @@ body {
 .tab-button:focus-visible {
   outline: 2px solid var(--mds-color-focus-light);
   outline-offset: 2px;
+}
+
+.user-management-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.user-management-table-wrapper {
+  overflow-x: auto;
+}
+
+.user-management-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.user-management-table th,
+.user-management-table td {
+  padding: 14px 16px;
+  border-top: 1px solid var(--mds-color-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.user-management-table th {
+  color: var(--mds-color-heading);
+  font-size: var(--mds-font-size-sm);
+  font-weight: var(--mds-font-weight-semibold);
+  line-height: 1.4;
+  background: var(--mds-color-white);
+}
+
+.user-management-user-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.user-management-user-email {
+  color: var(--mds-color-text);
+  font-size: var(--mds-font-size-sm);
+  font-weight: var(--mds-font-weight-semibold);
+}
+
+.user-management-user-username {
+  color: var(--mds-color-text-secondary);
+  font-size: var(--mds-font-size-xs);
+}
+
+.user-management-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: var(--mds-font-size-xs);
+  font-weight: var(--mds-font-weight-bold);
+  line-height: 1.3;
+}
+
+.user-management-status-pill.is-enabled {
+  background: color-mix(in srgb, var(--mds-color-success) 14%, var(--mds-color-white));
+  color: var(--mds-color-success);
+}
+
+.user-management-status-pill.is-disabled {
+  background: var(--mds-color-background);
+  color: var(--mds-color-text-secondary);
+}
+
+.user-management-role-select {
+  min-width: 180px;
+  border: 1px solid var(--mds-color-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: var(--mds-font-size-sm);
+  line-height: 1.4;
+  color: var(--mds-color-text);
+  background: var(--mds-color-white);
+  font-family: inherit;
+}
+
+.user-management-role-select:focus-visible {
+  outline: 2px solid var(--mds-color-focus-light);
+  outline-offset: 2px;
+}
+
+.user-management-table__actions {
+  width: 1%;
+  white-space: nowrap;
 }
 
 @media screen and (max-width: 900px) {
