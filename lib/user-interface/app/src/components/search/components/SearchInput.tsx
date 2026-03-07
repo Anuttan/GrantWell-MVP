@@ -13,6 +13,8 @@ interface SearchInputProps {
   searchTerm: string;
   isLoading: boolean;
   isSearching?: boolean;
+  placeholder?: string;
+  ariaLabel?: string;
   showResults: boolean;
   selectedIndex: number;
   disabled: boolean;
@@ -28,6 +30,8 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
       searchTerm,
       isLoading,
       isSearching = false,
+      placeholder = "Search by keyword, category, or describe what you need...",
+      ariaLabel = "Search grants by name, agency, or category",
       showResults,
       selectedIndex,
       disabled,
@@ -54,8 +58,8 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
             id="grant-search-input"
             ref={ref}
             type="text"
-            placeholder="Search by keyword, category, or describe what you need..."
-            aria-label="Search grants by name, agency, or category"
+            placeholder={placeholder}
+            aria-label={ariaLabel}
             aria-describedby="search-help-text"
             aria-busy={isLoading || isSearching}
             role="searchbox"

@@ -181,7 +181,8 @@ const NOFOsTab = React.memo(function NOFOsTab({
       await apiClient.landingPage.uploadFileToS3(signedUrl, selectedFile);
       await apiClient.landingPage.updateNOFOStatus(
         folderName, "active", undefined, undefined,
-        uploadGrantType ? (uploadGrantType as GrantTypeId) : "federal"
+        uploadGrantType ? (uploadGrantType as GrantTypeId) : "federal",
+        uploadCategory
       );
 
       if (showGrantSuccessBanner) {

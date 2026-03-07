@@ -64,6 +64,7 @@ export class ChatBotApi extends Construct {
       draftTable: tables.draftTable,
       nofoMetadataTable: tables.nofoMetadataTable,
       draftGenerationJobsTable: tables.draftGenerationJobsTable,
+      featureRolloutTable: tables.featureRolloutTable,
       feedbackBucket: buckets.feedbackBucket,
       knowledgeBase: knowledgeBase.knowledgeBase,
       knowledgeBaseSource: knowledgeBase.dataSource,
@@ -426,6 +427,51 @@ export class ChatBotApi extends Construct {
       path: "/user-management/invite-user",
       methods: [apigwv2.HttpMethod.POST],
       integration: inviteUserIntegration,
+      authorizer: httpAuthorizer,
+    });
+
+    const featureRolloutFunction = new lambda.Function(this, "FeatureRolloutFunction", {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, "functions/user-management/feature-rollouts")
+      ),
+      handler: "index.handler",
+      environment: {
+        FEATURE_ROLLOUT_TABLE_NAME: tables.featureRolloutTable.tableName,
+        USER_POOL_ID: props.authentication.userPool.userPoolId,
+      },
+      timeout: cdk.Duration.seconds(30),
+    });
+
+    tables.featureRolloutTable.grantReadWriteData(featureRolloutFunction);
+    props.authentication.userPool.grant(featureRolloutFunction, "cognito-idp:ListUsers");
+
+    const featureRolloutIntegration = new HttpLambdaIntegration(
+      "FeatureRolloutIntegration",
+      featureRolloutFunction
+    );
+    restBackend.restAPI.addRoutes({
+      path: "/feature-rollouts/me",
+      methods: [apigwv2.HttpMethod.GET],
+      integration: featureRolloutIntegration,
+      authorizer: httpAuthorizer,
+    });
+    restBackend.restAPI.addRoutes({
+      path: "/feature-rollouts/{featureKey}",
+      methods: [apigwv2.HttpMethod.GET, apigwv2.HttpMethod.PATCH],
+      integration: featureRolloutIntegration,
+      authorizer: httpAuthorizer,
+    });
+    restBackend.restAPI.addRoutes({
+      path: "/feature-rollouts/{featureKey}/users",
+      methods: [apigwv2.HttpMethod.GET],
+      integration: featureRolloutIntegration,
+      authorizer: httpAuthorizer,
+    });
+    restBackend.restAPI.addRoutes({
+      path: "/feature-rollouts/{featureKey}/users/{email}",
+      methods: [apigwv2.HttpMethod.PUT, apigwv2.HttpMethod.DELETE],
+      integration: featureRolloutIntegration,
       authorizer: httpAuthorizer,
     });
 

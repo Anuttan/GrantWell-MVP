@@ -29,6 +29,7 @@ interface LambdaFunctionStackProps {
   readonly draftTable: Table;
   readonly nofoMetadataTable: Table;
   readonly draftGenerationJobsTable: Table;
+  readonly featureRolloutTable: Table;
   readonly feedbackBucket: s3.Bucket;
   readonly ffioNofosBucket: s3.Bucket;
   readonly userDocumentsBucket: s3.Bucket;
@@ -1252,6 +1253,7 @@ export class LambdaFunctionStack extends cdk.Stack {
           OPENSEARCH_ENDPOINT: `${props.openSearchCollection.attrId}.${stack.region}.aoss.amazonaws.com`,
           OPENSEARCH_INDEX: knowledgeBaseIndexName,
           NOFO_METADATA_TABLE_NAME: props.nofoMetadataTable.tableName,
+          FEATURE_ROLLOUT_TABLE_NAME: props.featureRolloutTable.tableName,
         },
         timeout: cdk.Duration.seconds(30),
         memorySize: 512,
@@ -1281,9 +1283,10 @@ export class LambdaFunctionStack extends cdk.Stack {
     aiGrantSearchFunction.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
-        actions: ["dynamodb:Scan"],
+        actions: ["dynamodb:GetItem", "dynamodb:Scan"],
         resources: [
           props.nofoMetadataTable.tableArn,
+          props.featureRolloutTable.tableArn,
         ],
       })
     );

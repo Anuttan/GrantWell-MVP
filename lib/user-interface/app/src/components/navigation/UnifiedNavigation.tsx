@@ -3,8 +3,8 @@ import { useNavigate, useLocation, useParams, useSearchParams } from "react-rout
 import { v4 as uuidv4 } from "uuid";
 import { addToRecentlyViewed } from "../../common/helpers/recently-viewed-nofos";
 import { Home, MessageSquare, FileText, CheckSquare, Upload, LayoutDashboard } from "lucide-react";
-import { Auth } from "aws-amplify";
 import Modal from "../common/Modal";
+import { useAdminCheck } from "../../hooks/use-admin-check";
 
 interface UnifiedNavigationProps {
   documentIdentifier?: string;
@@ -36,8 +36,8 @@ const UnifiedNavigation: React.FC<UnifiedNavigationProps> = ({
   const viewportWidth = useViewportWidth();
   const isNarrowViewport = viewportWidth <= 320;
   const [isOpen, setIsOpen] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [showNofoRequiredModal, setShowNofoRequiredModal] = useState(false);
+  const { isAdmin } = useAdminCheck();
 
   // Determine current page/route
   const currentPath = location.pathname;
@@ -140,27 +140,6 @@ const UnifiedNavigation: React.FC<UnifiedNavigationProps> = ({
       setIsOpen(false);
     }
   }, [isNarrowViewport, isOpen]);
-
-  // Check admin permissions on component mount
-  useEffect(() => {
-    const checkAdmin = async () => {
-      try {
-        const result = await Auth.currentAuthenticatedUser();
-        if (result && Object.keys(result).length > 0) {
-          const adminRole =
-            result?.signInUserSession?.idToken?.payload["custom:role"];
-          if (adminRole && adminRole.includes("Admin")) {
-            setIsAdmin(true);
-          }
-        }
-      } catch (e) {
-        // User not authenticated or error checking admin status
-        setIsAdmin(false);
-      }
-    };
-
-    checkAdmin();
-  }, []);
 
   return (
     <>

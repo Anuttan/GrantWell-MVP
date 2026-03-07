@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { useApiClient } from "../../hooks/use-api-client";
 import { useAdminCheck } from "../../hooks/use-admin-check";
 import { useAIGrantSearch } from "../../hooks/use-ai-grant-search";
+import { useFeatureRolloutAccess } from "../../hooks/use-feature-rollout-access";
 import {
   addToRecentlyViewed,
   getRecentlyViewed,
@@ -48,17 +49,33 @@ export default function Welcome() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const aiSearch = useAIGrantSearch();
+  const { access: featureAccess } = useFeatureRolloutAccess();
+  const canUseAIGrantSearch = featureAccess?.features.aiGrantSearch.canUse ?? false;
+  const searchPlaceholder = canUseAIGrantSearch
+    ? "Search by keyword, category, or describe what you need..."
+    : "Search by grant name, agency, or category...";
+  const searchAriaLabel = canUseAIGrantSearch
+    ? "Search grants by name, agency, category, or described need"
+    : "Search grants by name, agency, or category";
 
   const handleSearch = useCallback(
     (query: string) => {
+      if (!canUseAIGrantSearch) return;
       aiSearch.search(query);
     },
-    [aiSearch.search]
+    [aiSearch.search, canUseAIGrantSearch]
   );
 
   const handleClearSearch = useCallback(() => {
     aiSearch.clearResults();
   }, [aiSearch.clearResults]);
+
+  useEffect(() => {
+    if (!canUseAIGrantSearch) {
+      aiSearch.clearResults();
+      setIsSearchPending(false);
+    }
+  }, [aiSearch.clearResults, canUseAIGrantSearch]);
 
   // Load recently viewed NOFOs
   useEffect(() => {
@@ -254,7 +271,9 @@ export default function Welcome() {
           </h2>
           <p className="how-it-works__text">
             Use the filters below to find grants by name, agency, or category.
-            Or use the search for specific grants in the table.
+            {canUseAIGrantSearch
+              ? " Or use AI search to describe what you need. "
+              : " Or use the search to find specific grants in the table. "}
             Click on any grant row to select it, then choose an action:{" "}
             <strong className="how-it-works__action-label">View Key Requirements</strong>{" "}
             to see eligibility and NOFO requirements,{" "}
@@ -265,6 +284,9 @@ export default function Welcome() {
           </p>
           <div className="visually-hidden" role="note" aria-label="Screen reader navigation note">
             Screen-reader note: Use the search bar below to filter grants by name, agency, or category.
+            {canUseAIGrantSearch
+              ? " AI search is enabled for your account, so descriptive searches will return ranked matches."
+              : ""}
             The table shows filtered results. Use the dropdown filters to narrow by status,
             category, or grant type. Click any grant row to select it, then action buttons will appear.
             Use heading navigation to explore the content on each screen.
@@ -278,10 +300,12 @@ export default function Welcome() {
           isLoading={loading}
           searchTerm={searchTerm}
           onSearchTermChange={setSearchTerm}
-          onSearch={handleSearch}
-          isSearching={aiSearch.isSearching}
+          onSearch={canUseAIGrantSearch ? handleSearch : undefined}
+          isSearching={canUseAIGrantSearch ? aiSearch.isSearching : false}
           onClearSearch={handleClearSearch}
-          onSearchPendingChange={setIsSearchPending}
+          onSearchPendingChange={canUseAIGrantSearch ? setIsSearchPending : undefined}
+          searchPlaceholder={searchPlaceholder}
+          searchAriaLabel={searchAriaLabel}
         />
 
         {/* Screen reader announcement */}
@@ -319,11 +343,12 @@ export default function Welcome() {
               onSelectDocument={handleSelectDocument}
               onSearchTermChange={setSearchTerm}
               searchTerm={searchTerm}
-              searchResults={aiSearch.results}
-              isSearching={aiSearch.isSearching}
-              isSearchPending={isSearchPending}
-              searchError={aiSearch.error}
+              searchResults={canUseAIGrantSearch ? aiSearch.results : null}
+              isSearching={canUseAIGrantSearch ? aiSearch.isSearching : false}
+              isSearchPending={canUseAIGrantSearch ? isSearchPending : false}
+              searchError={canUseAIGrantSearch ? aiSearch.error : null}
               onClearSearch={handleClearSearch}
+              preferAISearch={canUseAIGrantSearch}
             />
           </section>
         </ContentBox>
