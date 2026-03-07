@@ -32,7 +32,7 @@ const ReviewApplication: React.FC<ReviewApplicationProps> = ({
 }) => {
   const [sections, setSections] = useState<Section[]>([]);
   const [sectionAnswers, setSectionAnswers] = useState<Record<string, string>>({});
-  const [compliancePassed, setCompliancePassed] = useState(false);
+  const [completenessPassed, setCompletenessPassed] = useState(false);
   const [stats, setStats] = useState({ wordCount: 0, pageCount: 0, complete: 0 });
   const apiClient = useApiClient();
 
@@ -81,7 +81,7 @@ const ReviewApplication: React.FC<ReviewApplicationProps> = ({
       const complete = sections.filter(
         (s) => (sectionAnswers[s.name] || "").trim().length > 0
       ).length;
-      setCompliancePassed(complete === sections.length);
+      setCompletenessPassed(complete === sections.length);
 
       const allText = sections
         .map((s) => sectionAnswers[s.name] || "")
@@ -143,7 +143,7 @@ const ReviewApplication: React.FC<ReviewApplicationProps> = ({
     }
   };
 
-  const complianceClass = compliancePassed
+  const completenessClass = completenessPassed
     ? "ra-compliance--passed"
     : "ra-compliance--incomplete";
 
@@ -174,7 +174,7 @@ const ReviewApplication: React.FC<ReviewApplicationProps> = ({
           </div>
 
           <div className="ra-stat-card">
-            <div className={`ra-stat-card__value ${compliancePassed ? "ra-stat-card__value--passed" : "ra-stat-card__value--incomplete"}`}>
+            <div className={`ra-stat-card__value ${completenessPassed ? "ra-stat-card__value--passed" : "ra-stat-card__value--incomplete"}`}>
               {stats.complete}/{sections.length}
             </div>
             <div className="ra-stat-card__label">Completion Status</div>
@@ -182,21 +182,21 @@ const ReviewApplication: React.FC<ReviewApplicationProps> = ({
           </div>
         </div>
 
-        {/* Compliance Check Message */}
-        <div className={`ra-compliance ${complianceClass}`}>
-          {compliancePassed
+        {/* Completeness Check Message */}
+        <div className={`ra-compliance ${completenessClass}`}>
+          {completenessPassed
             ? <CheckCircle className="ra-compliance__icon" aria-hidden="true" />
             : <AlertTriangle className="ra-compliance__icon" aria-hidden="true" />
           }
           <div>
             <h3 className="ra-compliance__title">
-              {compliancePassed
-                ? "Compliance Check Passed!"
-                : "Some sections are incomplete"}
+              {completenessPassed
+                ? "All Sections Complete"
+                : "Some Sections Incomplete"}
             </h3>
             <p className="ra-compliance__text">
-              {compliancePassed
-                ? "Your application meets all the requirements for submission. All required sections are complete and formatted correctly."
+              {completenessPassed
+                ? "All required sections have been completed. Review your content for accuracy and alignment with NOFO requirements before exporting."
                 : "Please complete all required sections before exporting your application."}
             </p>
           </div>
@@ -277,7 +277,7 @@ const ReviewApplication: React.FC<ReviewApplicationProps> = ({
 
         <button
           onClick={handleExportPDF}
-          disabled={!compliancePassed}
+          disabled={!completenessPassed}
           className="ra-export-pdf-btn"
         >
           <Download className="ra-export-pdf-btn__icon" aria-hidden="true" />

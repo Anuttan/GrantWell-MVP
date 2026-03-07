@@ -16,6 +16,7 @@ interface AISearchResponse {
 }
 
 const CACHE_MAX_SIZE = 5;
+const SEARCH_TIMEOUT_MS = 15_000;
 
 interface CacheEntry {
   results: AISearchResult[];
@@ -76,14 +77,23 @@ export function useAIGrantSearch(): UseAIGrantSearchReturn {
           ? restEndpoint
           : `${restEndpoint}/`;
 
-        const response = await fetch(`${endpoint}ai-grant-search`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${idToken}`,
-          },
-          body: JSON.stringify({ query: query.trim() }),
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), SEARCH_TIMEOUT_MS);
+
+        let response: Response;
+        try {
+          response = await fetch(`${endpoint}ai-grant-search`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${idToken}`,
+            },
+            body: JSON.stringify({ query: query.trim() }),
+            signal: controller.signal,
+          });
+        } finally {
+          clearTimeout(timeoutId);
+        }
 
         if (!response.ok) {
           throw new Error(`Search failed (${response.status})`);
@@ -106,8 +116,14 @@ export function useAIGrantSearch(): UseAIGrantSearchReturn {
           timestamp: Date.now(),
         });
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Search failed";
+        let message: string;
+        if (err instanceof DOMException && err.name === "AbortError") {
+          message = "Search timed out. Try a more specific query or full sentence.";
+        } else if (err instanceof Error) {
+          message = err.message;
+        } else {
+          message = "Search failed";
+        }
         setError(message);
         setResults([]);
       } finally {

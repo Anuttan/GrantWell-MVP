@@ -14,6 +14,7 @@ export class TableStack extends Stack {
   public readonly draftTable: Table;
   public readonly nofoMetadataTable: Table;
   public readonly draftGenerationJobsTable: Table;
+  public readonly featureRolloutTable: Table;
 
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
@@ -122,5 +123,13 @@ export class TableStack extends Stack {
     });
 
     this.draftGenerationJobsTable = draftGenerationJobsTable;
+
+    // Generic feature rollout table keyed by feature and subject.
+    const featureRolloutTable = new Table(this, 'FeatureRolloutTable', {
+      partitionKey: { name: 'featureKey', type: AttributeType.STRING },
+      sortKey: { name: 'subjectKey', type: AttributeType.STRING },
+    });
+
+    this.featureRolloutTable = featureRolloutTable;
   }
 }

@@ -16,6 +16,8 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
   isSearching = false,
   onClearSearch,
   onSearchPendingChange,
+  searchPlaceholder,
+  searchAriaLabel,
 }) => {
   const [internalSearchTerm, setInternalSearchTerm] = useState("");
   const searchTerm = externalSearchTerm !== undefined ? externalSearchTerm : internalSearchTerm;
@@ -26,13 +28,26 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSearchingRef = useRef(isSearching);
   const lastSubmittedQuery = useRef("");
+  const queuedQueryRef = useRef<string | null>(null);
 
   isSearchingRef.current = isSearching;
+
+  useEffect(() => {
+    if (!isSearching && queuedQueryRef.current !== null) {
+      const queued = queuedQueryRef.current;
+      queuedQueryRef.current = null;
+      if (onSearch && queued !== lastSubmittedQuery.current) {
+        lastSubmittedQuery.current = queued;
+        onSearch(queued);
+      }
+    }
+  }, [isSearching, onSearch]);
 
   useEffect(() => {
     const trimmed = searchTerm.trim();
     if (trimmed.length < MIN_QUERY_LENGTH) {
       lastSubmittedQuery.current = "";
+      queuedQueryRef.current = null;
       onSearchPendingChange?.(false);
       return;
     }
@@ -44,11 +59,17 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       debounceRef.current = null;
-      if (onSearch && !isSearchingRef.current && trimmed !== lastSubmittedQuery.current) {
-        lastSubmittedQuery.current = trimmed;
-        onSearch(trimmed);
+      if (onSearch && trimmed !== lastSubmittedQuery.current) {
+        if (isSearchingRef.current) {
+          queuedQueryRef.current = trimmed;
+        } else {
+          lastSubmittedQuery.current = trimmed;
+          onSearch(trimmed);
+          onSearchPendingChange?.(false);
+        }
+      } else {
+        onSearchPendingChange?.(false);
       }
-      onSearchPendingChange?.(false);
     }, SEARCH_DEBOUNCE_MS);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -90,6 +111,8 @@ const IntegratedSearchBar: React.FC<IntegratedSearchBarProps> = ({
         searchTerm={searchTerm}
         isLoading={isLoading}
         isSearching={isSearching}
+        placeholder={searchPlaceholder}
+        ariaLabel={searchAriaLabel}
         showResults={false}
         selectedIndex={-1}
         disabled={isLoading}

@@ -6,6 +6,7 @@ import { useNotifications } from "../../components/notifications/NotificationMan
 import UnifiedNavigation from "../../components/navigation/UnifiedNavigation";
 import NOFOsTab from "./components/NOFOsTab";
 import PaginationControls from "./components/PaginationControls";
+import FeatureRolloutsTab from "./components/FeatureRolloutsTab";
 import {
   LuSearch, LuFilter, LuMail, LuUpload, LuCheck, LuX,
   LuRefreshCw, LuDownload, LuInfo,
@@ -16,6 +17,7 @@ import type { RawNOFOData } from "../../common/types/document";
 import "../../styles/dashboard.css";
 
 const Dashboard: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<"grants" | "feature-rollouts">("grants");
   const [nofos, setNofos] = useState<NOFO[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
@@ -44,7 +46,7 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const apiClient = useApiClient();
-  const { isAdmin } = useAdminCheck();
+  const { isAdmin, isDeveloper, loading: roleLoading } = useAdminCheck();
   const { addNotification } = useNotifications();
 
   useEffect(() => { window.scrollTo(0, 0); }, [location.pathname]);
@@ -89,6 +91,12 @@ const Dashboard: React.FC = () => {
     if (!isAdmin) return;
     fetchNofos().then(() => setLoading(false));
   }, [isAdmin, fetchNofos]);
+
+  useEffect(() => {
+    if (!roleLoading && !isAdmin) {
+      setLoading(false);
+    }
+  }, [isAdmin, roleLoading]);
 
   const handleRefresh = useCallback(() => fetchNofos(true), [fetchNofos]);
 
@@ -192,7 +200,7 @@ const Dashboard: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [filterMenuOpen]);
 
-  if (loading) return <div className="loading">Loading Dashboard...</div>;
+  if (loading || roleLoading) return <div className="loading">Loading Dashboard...</div>;
   if (!isAdmin) return null;
 
   const filterCount = getActiveFilterCount();
@@ -240,101 +248,148 @@ const Dashboard: React.FC = () => {
           )}
 
           <div className="tab-controls">
-            <button className="tab-button active">Grants</button>
+            <div className="visually-hidden" aria-live="polite">
+              {activeTab === "grants" ? "Grants tab selected" : "Developer rollouts tab selected"}
+            </div>
+            <button
+              id="dashboard-tab-grants"
+              className={`tab-button ${activeTab === "grants" ? "active" : ""}`}
+              onClick={() => setActiveTab("grants")}
+              role="tab"
+              aria-selected={activeTab === "grants"}
+              aria-controls="dashboard-panel-grants"
+              tabIndex={activeTab === "grants" ? 0 : -1}
+            >
+              Grants
+            </button>
+            {isDeveloper && (
+              <button
+                id="dashboard-tab-rollouts"
+                className={`tab-button ${activeTab === "feature-rollouts" ? "active" : ""}`}
+                onClick={() => setActiveTab("feature-rollouts")}
+                role="tab"
+                aria-selected={activeTab === "feature-rollouts"}
+                aria-controls="dashboard-panel-rollouts"
+                tabIndex={activeTab === "feature-rollouts" ? 0 : -1}
+              >
+                Developer Rollouts
+              </button>
+            )}
           </div>
 
           <div className="dashboard-content">
-            <div className="search-actions-container">
-              <div className="search-filter-container">
-                <div className="search-input-wrapper">
-                  <LuSearch className="search-icon" size={18} />
-                  <label htmlFor="grant-search" className="visually-hidden">Search grants</label>
-                  <input id="grant-search" type="text" className="search-input" placeholder="Search grants..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                </div>
-
-                <div className="filter-container">
-                  <button ref={filterButtonRef} className={`filter-button ${filterCount > 0 ? "active" : ""}`}
-                    onClick={() => setFilterMenuOpen(!filterMenuOpen)} aria-label="Filter grants" aria-expanded={filterMenuOpen} aria-haspopup="menu">
-                    <LuFilter size={18} />
-                    {filterCount > 0 && <span className="filter-badge" aria-label={`${filterCount} filter(s) active`}>{filterCount}</span>}
-                  </button>
-
-                  {filterMenuOpen && (
-                    <div ref={filterMenuRef} className="filter-menu" role="menu">
-                      <div className="filter-menu-header">Filter by Status</div>
-                      {(["all", "active", "archived"] as const).map((status) => (
-                        <button key={status} onClick={() => setStatusFilter(status)}
-                          className={`filter-option ${statusFilter === status ? "selected" : ""}`}
-                          role="menuitemradio" aria-checked={statusFilter === status}>
-                          <div className="filter-option-content">
-                            <span className="filter-option-check">{statusFilter === status ? "✓" : ""}</span>
-                            {status === "all" ? "All Status" : status.charAt(0).toUpperCase() + status.slice(1)}
-                          </div>
-                        </button>
-                      ))}
-                      <div className="filter-menu-divider" />
-                      <div className="filter-menu-header">Filter by Grant Type</div>
-                      {(["all", "federal", "state", "quasi", "philanthropic", "unknown"] as const).map((type) => (
-                        <button key={type} onClick={() => setGrantTypeFilter(type)}
-                          className={`filter-option ${grantTypeFilter === type ? "selected" : ""}`}
-                          role="menuitemradio" aria-checked={grantTypeFilter === type}>
-                          <div className="filter-option-content">
-                            <span className="filter-option-check">{grantTypeFilter === type ? "✓" : ""}</span>
-                            {type === "all" ? "All Types" : type.charAt(0).toUpperCase() + type.slice(1)}
-                          </div>
-                        </button>
-                      ))}
+            {activeTab === "grants" ? (
+              <div
+                id="dashboard-panel-grants"
+                role="tabpanel"
+                aria-labelledby="dashboard-tab-grants"
+                tabIndex={0}
+              >
+                <div className="search-actions-container">
+                  <div className="search-filter-container">
+                    <div className="search-input-wrapper">
+                      <LuSearch className="search-icon" size={18} />
+                      <label htmlFor="grant-search" className="visually-hidden">Search grants</label>
+                      <input id="grant-search" type="text" className="search-input" placeholder="Search grants..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                     </div>
-                  )}
+
+                    <div className="filter-container">
+                      <button ref={filterButtonRef} className={`filter-button ${filterCount > 0 ? "active" : ""}`}
+                        onClick={() => setFilterMenuOpen(!filterMenuOpen)} aria-label="Filter grants" aria-expanded={filterMenuOpen} aria-haspopup="menu">
+                        <LuFilter size={18} />
+                        {filterCount > 0 && <span className="filter-badge" aria-label={`${filterCount} filter(s) active`}>{filterCount}</span>}
+                      </button>
+
+                      {filterMenuOpen && (
+                        <div ref={filterMenuRef} className="filter-menu" role="menu">
+                          <div className="filter-menu-header">Filter by Status</div>
+                          {(["all", "active", "archived"] as const).map((status) => (
+                            <button key={status} onClick={() => setStatusFilter(status)}
+                              className={`filter-option ${statusFilter === status ? "selected" : ""}`}
+                              role="menuitemradio" aria-checked={statusFilter === status}>
+                              <div className="filter-option-content">
+                                <span className="filter-option-check">{statusFilter === status ? "✓" : ""}</span>
+                                {status === "all" ? "All Status" : status.charAt(0).toUpperCase() + status.slice(1)}
+                              </div>
+                            </button>
+                          ))}
+                          <div className="filter-menu-divider" />
+                          <div className="filter-menu-header">Filter by Grant Type</div>
+                          {(["all", "federal", "state", "quasi", "philanthropic", "unknown"] as const).map((type) => (
+                            <button key={type} onClick={() => setGrantTypeFilter(type)}
+                              className={`filter-option ${grantTypeFilter === type ? "selected" : ""}`}
+                              role="menuitemradio" aria-checked={grantTypeFilter === type}>
+                              <div className="filter-option-content">
+                                <span className="filter-option-check">{grantTypeFilter === type ? "✓" : ""}</span>
+                                {type === "all" ? "All Types" : type.charAt(0).toUpperCase() + type.slice(1)}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="action-buttons">
+                    <button className="action-button invite-button" onClick={() => setInviteUserModalOpen(true)}>
+                      <LuMail size={16} className="button-icon" /><span>Invite User</span>
+                    </button>
+                    <button className="action-button add-button" onClick={() => setUploadNofoModalOpen(true)}>
+                      <LuUpload size={16} className="button-icon" /><span>Add Grant</span>
+                    </button>
+                    <button className="action-button scraper-button" onClick={() => setScrapeConfirmModalOpen(true)} disabled={isScraping} aria-label="Auto-scrape NOFOs from grants.gov">
+                      <LuDownload size={16} className="button-icon" /><span>{isScraping ? "Scraping..." : "Auto-Scrape NOFOs"}</span>
+                    </button>
+                  </div>
                 </div>
+
+                <Modal isOpen={scrapeConfirmModalOpen} onClose={() => setScrapeConfirmModalOpen(false)} title="Confirm Auto-Scrape">
+                  <div className="modal-form">
+                    <div className="delete-confirmation">
+                      <LuInfo size={32} className="warning-icon" style={{ color: "#14558F" }} />
+                      <p>Are you sure you want to scrape NOFOs now?</p>
+                    </div>
+                    <p className="warning-text">This will search for new grants on grants.gov and add them to the system. This process may take a few minutes.</p>
+                    <div className="modal-actions">
+                      <button className="modal-button secondary" onClick={() => setScrapeConfirmModalOpen(false)}>Cancel</button>
+                      <button className="modal-button primary" onClick={confirmAutomatedScraper}>Yes, Scrape Now</button>
+                    </div>
+                  </div>
+                </Modal>
+
+                <NOFOsTab
+                  nofos={paginatedData.items}
+                  searchQuery={searchQuery}
+                  apiClient={apiClient}
+                  updateNofos={(updater) => setNofos(updater)}
+                  uploadNofoModalOpen={uploadNofoModalOpen}
+                  setUploadNofoModalOpen={setUploadNofoModalOpen}
+                  showGrantSuccessBanner={showGrantSuccessBanner}
+                  addNotification={addNotification}
+                />
+
+                <PaginationControls
+                  currentPage={currentPage}
+                  totalPages={paginatedData.totalPages}
+                  totalItems={paginatedData.totalItems}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                  onItemsPerPageChange={(e) => { setItemsPerPage(parseInt(e.target.value)); setCurrentPage(1); }}
+                />
               </div>
-
-              <div className="action-buttons">
-                <button className="action-button invite-button" onClick={() => setInviteUserModalOpen(true)}>
-                  <LuMail size={16} className="button-icon" /><span>Invite User</span>
-                </button>
-                <button className="action-button add-button" onClick={() => setUploadNofoModalOpen(true)}>
-                  <LuUpload size={16} className="button-icon" /><span>Add Grant</span>
-                </button>
-                <button className="action-button scraper-button" onClick={() => setScrapeConfirmModalOpen(true)} disabled={isScraping} aria-label="Auto-scrape NOFOs from grants.gov">
-                  <LuDownload size={16} className="button-icon" /><span>{isScraping ? "Scraping..." : "Auto-Scrape NOFOs"}</span>
-                </button>
+            ) : (
+              <div
+                id="dashboard-panel-rollouts"
+                role="tabpanel"
+                aria-labelledby="dashboard-tab-rollouts"
+                tabIndex={0}
+              >
+                <FeatureRolloutsTab
+                  apiClient={apiClient}
+                  addNotification={addNotification}
+                />
               </div>
-            </div>
-
-            <Modal isOpen={scrapeConfirmModalOpen} onClose={() => setScrapeConfirmModalOpen(false)} title="Confirm Auto-Scrape">
-              <div className="modal-form">
-                <div className="delete-confirmation">
-                  <LuInfo size={32} className="warning-icon" style={{ color: "#14558F" }} />
-                  <p>Are you sure you want to scrape NOFOs now?</p>
-                </div>
-                <p className="warning-text">This will search for new grants on grants.gov and add them to the system. This process may take a few minutes.</p>
-                <div className="modal-actions">
-                  <button className="modal-button secondary" onClick={() => setScrapeConfirmModalOpen(false)}>Cancel</button>
-                  <button className="modal-button primary" onClick={confirmAutomatedScraper}>Yes, Scrape Now</button>
-                </div>
-              </div>
-            </Modal>
-
-            <NOFOsTab
-              nofos={paginatedData.items}
-              searchQuery={searchQuery}
-              apiClient={apiClient}
-              updateNofos={(updater) => setNofos(updater)}
-              uploadNofoModalOpen={uploadNofoModalOpen}
-              setUploadNofoModalOpen={setUploadNofoModalOpen}
-              showGrantSuccessBanner={showGrantSuccessBanner}
-              addNotification={addNotification}
-            />
-
-            <PaginationControls
-              currentPage={currentPage}
-              totalPages={paginatedData.totalPages}
-              totalItems={paginatedData.totalItems}
-              itemsPerPage={itemsPerPage}
-              onPageChange={setCurrentPage}
-              onItemsPerPageChange={(e) => { setItemsPerPage(parseInt(e.target.value)); setCurrentPage(1); }}
-            />
+            )}
           </div>
         </div>
 
