@@ -42,6 +42,8 @@ const Dashboard: React.FC = () => {
 
   const filterMenuRef = useRef<HTMLDivElement>(null);
   const filterButtonRef = useRef<HTMLButtonElement>(null);
+  const grantsTabRef = useRef<HTMLButtonElement>(null);
+  const rolloutsTabRef = useRef<HTMLButtonElement>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -99,6 +101,42 @@ const Dashboard: React.FC = () => {
   }, [isAdmin, roleLoading]);
 
   const handleRefresh = useCallback(() => fetchNofos(true), [fetchNofos]);
+
+  const handleTabKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLButtonElement>) => {
+      const tabs = [
+        { key: "grants" as const, ref: grantsTabRef },
+        ...(isDeveloper
+          ? [{ key: "feature-rollouts" as const, ref: rolloutsTabRef }]
+          : []),
+      ];
+      const currentIndex = tabs.findIndex((tab) => tab.key === activeTab);
+      if (currentIndex === -1) {
+        return;
+      }
+
+      const focusTabAt = (nextIndex: number) => {
+        const nextTab = tabs[nextIndex];
+        setActiveTab(nextTab.key);
+        nextTab.ref.current?.focus();
+      };
+
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        focusTabAt((currentIndex + 1) % tabs.length);
+      } else if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        focusTabAt((currentIndex - 1 + tabs.length) % tabs.length);
+      } else if (event.key === "Home") {
+        event.preventDefault();
+        focusTabAt(0);
+      } else if (event.key === "End") {
+        event.preventDefault();
+        focusTabAt(tabs.length - 1);
+      }
+    },
+    [activeTab, isDeveloper]
+  );
 
   const sendInvite = useCallback(async () => {
     if (!inviteEmail.trim() || !/\S+@\S+\.\S+/.test(inviteEmail)) {
@@ -247,14 +285,16 @@ const Dashboard: React.FC = () => {
             </div>
           )}
 
-          <div className="tab-controls">
+          <div className="tab-controls" role="tablist" aria-label="Dashboard sections">
             <div className="visually-hidden" aria-live="polite">
               {activeTab === "grants" ? "Grants tab selected" : "Developer rollouts tab selected"}
             </div>
             <button
               id="dashboard-tab-grants"
+              ref={grantsTabRef}
               className={`tab-button ${activeTab === "grants" ? "active" : ""}`}
               onClick={() => setActiveTab("grants")}
+              onKeyDown={handleTabKeyDown}
               role="tab"
               aria-selected={activeTab === "grants"}
               aria-controls="dashboard-panel-grants"
@@ -265,8 +305,10 @@ const Dashboard: React.FC = () => {
             {isDeveloper && (
               <button
                 id="dashboard-tab-rollouts"
+                ref={rolloutsTabRef}
                 className={`tab-button ${activeTab === "feature-rollouts" ? "active" : ""}`}
                 onClick={() => setActiveTab("feature-rollouts")}
+                onKeyDown={handleTabKeyDown}
                 role="tab"
                 aria-selected={activeTab === "feature-rollouts"}
                 aria-controls="dashboard-panel-rollouts"

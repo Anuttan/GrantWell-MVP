@@ -17,6 +17,7 @@ interface GrantsTableProps {
   isSearchPending?: boolean;
   searchError?: string | null;
   onClearSearch?: () => void;
+  preferAISearch?: boolean;
 }
 
 export const GrantsTable: React.FC<GrantsTableProps> = ({
@@ -30,6 +31,7 @@ export const GrantsTable: React.FC<GrantsTableProps> = ({
   isSearchPending = false,
   searchError = null,
   onClearSearch,
+  preferAISearch = false,
 }) => {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "archived">("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -73,7 +75,7 @@ export const GrantsTable: React.FC<GrantsTableProps> = ({
 
       if (hasRankedResults) {
         if (!scoreMap.has(normalizedName)) return false;
-      } else if (searchLower !== "" && !awaitingAIResults) {
+      } else if (searchLower !== "" && !awaitingAIResults && !preferAISearch) {
         const tokens = searchLower.split(/\s+/).filter(Boolean);
         const searchableText = [
           nofo.name,
@@ -120,7 +122,7 @@ export const GrantsTable: React.FC<GrantsTableProps> = ({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilter, categoryFilter, grantTypeFilter, searchTerm, searchResults]);
+  }, [statusFilter, categoryFilter, grantTypeFilter, searchTerm, searchResults, preferAISearch]);
 
   const handleRowClick = (nofo: NOFO) => {
     onSelectDocument({

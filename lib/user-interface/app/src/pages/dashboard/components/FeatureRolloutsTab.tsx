@@ -184,8 +184,8 @@ const FeatureRolloutsTab: React.FC<FeatureRolloutsTabProps> = ({
         </div>
       </div>
 
-      <div className="feature-rollouts-grid">
-        <section className="feature-rollouts-card">
+      <div className="feature-rollouts-card">
+        <section className="feature-rollouts-section">
           <div className="feature-rollouts-section-header">
             <h3>Allowlisted Users</h3>
             <p>Used only when rollout mode is set to allowlisted users only.</p>
@@ -216,24 +216,31 @@ const FeatureRolloutsTab: React.FC<FeatureRolloutsTabProps> = ({
           )}
         </section>
 
-        <section className="feature-rollouts-card">
+        <section className="feature-rollouts-section">
           <div className="feature-rollouts-section-header">
             <h3>Search Users</h3>
             <p>Search Cognito users by email and grant access individually.</p>
           </div>
 
           <div className="feature-rollouts-search">
-            <input
-              type="text"
-              className="feature-rollouts-search-input"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search by email"
-            />
+            <div className="feature-rollouts-search-field">
+              <label htmlFor="feature-rollouts-user-search" className="feature-rollouts-search-label">
+                User email search
+              </label>
+              <input
+                id="feature-rollouts-user-search"
+                type="text"
+                className="feature-rollouts-search-input"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search by email"
+              />
+            </div>
             <button
-              className="action-button refresh-button"
+              className="feature-rollouts-primary-button"
               onClick={handleSearchUsers}
               disabled={searchingUsers}
+              type="button"
             >
               {searchingUsers ? "Searching..." : "Search"}
             </button>

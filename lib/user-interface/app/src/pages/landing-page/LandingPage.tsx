@@ -272,8 +272,8 @@ export default function Welcome() {
           <p className="how-it-works__text">
             Use the filters below to find grants by name, agency, or category.
             {canUseAIGrantSearch
-              ? " Or use AI search to describe what you need and get ranked grant matches in the table."
-              : " Or use the search to find specific grants in the table."}
+              ? " Or use AI search to describe what you need. "
+              : " Or use the search to find specific grants in the table. "}
             Click on any grant row to select it, then choose an action:{" "}
             <strong className="how-it-works__action-label">View Key Requirements</strong>{" "}
             to see eligibility and NOFO requirements,{" "}
@@ -348,6 +348,7 @@ export default function Welcome() {
               isSearchPending={canUseAIGrantSearch ? isSearchPending : false}
               searchError={canUseAIGrantSearch ? aiSearch.error : null}
               onClearSearch={handleClearSearch}
+              preferAISearch={canUseAIGrantSearch}
             />
           </section>
         </ContentBox>
