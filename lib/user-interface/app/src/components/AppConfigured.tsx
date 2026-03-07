@@ -4,98 +4,97 @@ import {
   defaultDarkModeOverride,
 } from "@aws-amplify/ui-react";
 import { BrowserRouter } from "react-router-dom";
-import App from "../App";
 import { Amplify, Auth, Hub } from "aws-amplify";
+import { Alert, Spinner } from "react-bootstrap";
+import App from "../App";
 import { AppConfig } from "../common/types/app";
 import { AppContext } from "../common/app-context";
-import { Alert, Spinner } from "react-bootstrap";
 import { StorageHelper } from "../common/helpers/storage-helper";
 import "@aws-amplify/ui-react/styles.css";
 import AuthPage from "../pages/auth/AuthPage";
 import BrandBanner from "./mds/BrandBanner";
-import MDSHeader from "./mds/MdsHeader";
 import FooterComponent from "./mds/MdsFooter";
+import MDSHeader from "./mds/MdsHeader";
+
+async function getInitialAuthState() {
+  try {
+    await Auth.currentAuthenticatedUser();
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export default function AppConfigured() {
   const [config, setConfig] = useState<AppConfig | null>(null);
-  const [error, setError] = useState<boolean | null>(null);
-  const [authenticated, setAuthenticated] = useState<boolean>(null);
+  const [error, setError] = useState(false);
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [theme, setTheme] = useState(StorageHelper.getTheme());
-  const [configured, setConfigured] = useState<boolean>(false);
+  const [configured, setConfigured] = useState(false);
 
-  // trigger authentication state when needed
   useEffect(() => {
-    (async () => {
+    let cancelled = false;
+
+    const loadConfiguration = async () => {
       try {
         const result = await fetch("/aws-exports.json");
-        const awsExports = await result.json();
-        const currentConfig = Amplify.configure(awsExports) as AppConfig | null;
-        
-        try {
-          const user = await Auth.currentAuthenticatedUser();
-          if (user) {
-            setAuthenticated(true);
-          }
-        } catch (authError) {
-          // User is not authenticated - show custom login UI instead of redirecting
-          console.log("User not authenticated, showing login page");
-          setAuthenticated(false);
+        if (!result.ok) {
+          throw new Error(`Failed to load auth configuration: ${result.status}`);
         }
-        
+
+        const awsExports = (await result.json()) as AppConfig;
+        Amplify.configure(awsExports);
+
+        const isAuthenticated = await getInitialAuthState();
+        if (cancelled) return;
+
         setConfig(awsExports);
-        setConfigured(true);
-      } catch (e) {
-        // Configuration file failed to load
-        console.error("Configuration error:", e);
+        setAuthenticated(isAuthenticated);
+      } catch (configError) {
+        if (cancelled) return;
+
+        console.error("Configuration error:", configError);
         setError(true);
-        setConfigured(true);
+      } finally {
+        if (!cancelled) {
+          setConfigured(true);
+        }
       }
-    })();
+    };
+
+    loadConfiguration();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Listen for auth state changes using Amplify Hub
   useEffect(() => {
-    const hubListener = Hub.listen('auth', async ({ payload }) => {
+    const unsubscribe = Hub.listen("auth", ({ payload }) => {
       switch (payload.event) {
-        case 'signIn':
-        case 'tokenRefresh':
+        case "signIn":
+        case "tokenRefresh":
           setAuthenticated(true);
           break;
-        case 'signOut':
+        case "signOut":
           setAuthenticated(false);
-          // Redirect to root page on logout (backup navigation if handlers don't navigate)
-          if (window.location.pathname !== '/') {
-            window.location.href = '/';
+          if (window.location.pathname !== "/") {
+            window.location.href = "/";
           }
           break;
-        case 'signIn_failure':
+        case "signIn_failure":
           setAuthenticated(false);
+          break;
+        default:
           break;
       }
     });
 
-    // Check initial auth state
-    const checkAuthState = async () => {
-      try {
-        const user = await Auth.currentAuthenticatedUser();
-        if (user) {
-          setAuthenticated(true);
-        }
-      } catch (e) {
-        setAuthenticated(false);
-      }
-    };
-    
-    if (configured) {
-      checkAuthState();
-    }
-
     return () => {
-      hubListener();
+      unsubscribe();
     };
-  }, [configured]);
+  }, []);
 
-  // dark/light theme
   useEffect(() => {
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
@@ -103,12 +102,11 @@ export default function AppConfigured() {
           mutation.type === "attributes" &&
           mutation.attributeName === "style"
         ) {
-          const newValue =
-            document.documentElement.style.getPropertyValue(
-              "--app-color-scheme"
-            );
-
+          const newValue = document.documentElement.style.getPropertyValue(
+            "--app-color-scheme",
+          );
           const mode = newValue === "dark" ? "dark" : "light";
+
           if (mode !== theme) {
             setTheme(mode);
           }
@@ -185,6 +183,7 @@ export default function AppConfigured() {
           <AppLayoutContent
             authenticated={authenticated}
             configured={configured}
+            onAuthenticated={() => setAuthenticated(true)}
           />
         </BrowserRouter>
       </ThemeProvider>
@@ -195,24 +194,26 @@ export default function AppConfigured() {
 function AppLayoutContent({
   authenticated,
   configured,
+  onAuthenticated,
 }: {
   authenticated: boolean | null;
   configured: boolean;
+  onAuthenticated: () => void;
 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <BrandBanner />
       <MDSHeader showSignOut={authenticated === true} />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {authenticated ? (
           <App />
         ) : configured ? (
-          <AuthPage />
+          <AuthPage onAuthenticated={onAuthenticated} />
         ) : (
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <Spinner animation="border" size="sm" />
-          <span>Loading</span>
-        </div>
+            <Spinner animation="border" size="sm" />
+            <span>Loading</span>
+          </div>
         )}
       </div>
       <FooterComponent />
