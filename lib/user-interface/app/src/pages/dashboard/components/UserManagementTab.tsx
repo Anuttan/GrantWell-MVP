@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import type { ApiClient } from "../../../common/api-client/api-client";
 import type { ManagedUser, UserRolePreset } from "../../../common/types/user-management";
+import PaginationControls from "./PaginationControls";
 
 interface UserManagementTabProps {
   apiClient: ApiClient;
@@ -39,17 +40,36 @@ const UserManagementTab: React.FC<UserManagementTabProps> = ({
   const [draftRoles, setDraftRoles] = useState<Record<string, UserRolePreset>>({});
   const [loading, setLoading] = useState(true);
   const [savingUsername, setSavingUsername] = useState<string | null>(null);
+  const [pageSize, setPageSize] = useState(25);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageTokens, setPageTokens] = useState<Array<string | null>>([null]);
+  const [nextPaginationToken, setNextPaginationToken] = useState<string | null>(null);
 
-  const loadUsers = useCallback(async () => {
+  const loadUsers = useCallback(async (
+    page: number,
+    nextPageSize: number,
+    tokens: Array<string | null>
+  ) => {
     try {
       setLoading(true);
-      const response = await apiClient.userManagement.listUsers();
+      const response = await apiClient.userManagement.listUsers({
+        limit: nextPageSize,
+        paginationToken: tokens[page - 1] ?? null,
+      });
       setUsers(response.users);
       setDraftRoles(
         Object.fromEntries(
           response.users.map((user) => [user.username, getRolePreset(user.roles)])
         )
       );
+      setNextPaginationToken(response.nextPaginationToken);
+      setPageTokens((current) => {
+        const nextTokens = tokens.slice(0, page);
+        if (response.nextPaginationToken) {
+          nextTokens[page] = response.nextPaginationToken;
+        }
+        return nextTokens;
+      });
     } catch (error) {
       console.error("Error loading users:", error);
       addNotification("error", "Failed to load users");
@@ -59,8 +79,31 @@ const UserManagementTab: React.FC<UserManagementTabProps> = ({
   }, [apiClient, addNotification]);
 
   useEffect(() => {
-    void loadUsers();
-  }, [loadUsers]);
+    void loadUsers(1, pageSize, [null]);
+  }, [loadUsers, pageSize]);
+
+  const handlePageChange = useCallback((nextPage: number) => {
+    if (nextPage < 1) {
+      return;
+    }
+    if (nextPage > currentPage && !nextPaginationToken) {
+      return;
+    }
+    if (nextPage > pageTokens.length) {
+      return;
+    }
+
+    setCurrentPage(nextPage);
+    void loadUsers(nextPage, pageSize, pageTokens);
+  }, [currentPage, loadUsers, nextPaginationToken, pageSize, pageTokens]);
+
+  const handlePageSizeChange = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
+    const nextPageSize = Number.parseInt(event.target.value, 10);
+    setCurrentPage(1);
+    setPageTokens([null]);
+    setNextPaginationToken(null);
+    setPageSize(nextPageSize);
+  }, []);
 
   const handleSave = useCallback(
     async (user: ManagedUser) => {
@@ -178,6 +221,18 @@ const UserManagementTab: React.FC<UserManagementTabProps> = ({
             </tbody>
           </table>
         </div>
+        <PaginationControls
+          mode="token"
+          currentPage={currentPage}
+          pageItemCount={users.length}
+          hasNextPage={Boolean(nextPaginationToken)}
+          itemsPerPage={pageSize}
+          onPageChange={handlePageChange}
+          onItemsPerPageChange={handlePageSizeChange}
+          itemsPerPageOptions={[25, 50, 60]}
+          itemLabel="users"
+          selectId="user-management-page-size"
+        />
       </div>
     </div>
   );

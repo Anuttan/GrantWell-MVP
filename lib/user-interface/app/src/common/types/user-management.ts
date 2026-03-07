@@ -10,4 +10,6 @@ export interface ManagedUser {
 
 export interface ManagedUsersResponse {
   users: ManagedUser[];
+  nextPaginationToken: string | null;
+  pageSize: number;
 }

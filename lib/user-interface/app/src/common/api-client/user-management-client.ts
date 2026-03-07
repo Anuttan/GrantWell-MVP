@@ -46,9 +46,20 @@ export class UserManagementClient {
     }
   }
 
-  async listUsers(): Promise<ManagedUsersResponse> {
+  async listUsers(options?: {
+    limit?: number;
+    paginationToken?: string | null;
+  }): Promise<ManagedUsersResponse> {
     const headers = await this.getAuthHeaders();
-    const response = await fetch(`${this.baseUrl}/user-management/users`, {
+    const url = new URL(`${this.baseUrl}/user-management/users`);
+    if (options?.limit) {
+      url.searchParams.set("limit", String(options.limit));
+    }
+    if (options?.paginationToken) {
+      url.searchParams.set("paginationToken", options.paginationToken);
+    }
+
+    const response = await fetch(url, {
       method: "GET",
       headers,
     });
