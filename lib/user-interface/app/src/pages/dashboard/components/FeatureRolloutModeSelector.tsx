@@ -5,6 +5,7 @@ interface FeatureRolloutModeSelectorProps {
   mode: FeatureRolloutMode;
   saving: boolean;
   onChange: (mode: FeatureRolloutMode) => void;
+  renderOptionContent?: (mode: FeatureRolloutMode) => React.ReactNode;
 }
 
 const rolloutModeOptions: Array<{
@@ -33,25 +34,32 @@ const FeatureRolloutModeSelector: React.FC<FeatureRolloutModeSelectorProps> = ({
   mode,
   saving,
   onChange,
+  renderOptionContent,
 }) => (
   <fieldset className="feature-rollouts-mode-group">
     <legend className="feature-rollouts-mode-legend">Rollout mode</legend>
     <div className="feature-rollouts-mode-options">
       {rolloutModeOptions.map((option) => (
-        <label key={option.value} className="feature-rollouts-mode-option">
-          <input
-            type="radio"
-            name="ai-search-rollout-mode"
-            value={option.value}
-            checked={mode === option.value}
-            onChange={() => onChange(option.value)}
-            disabled={saving}
-          />
-          <span className="feature-rollouts-mode-copy">
-            <span className="feature-rollouts-mode-label">{option.label}</span>
-            <span className="feature-rollouts-mode-description">{option.description}</span>
-          </span>
-        </label>
+        <div
+          key={option.value}
+          className={`feature-rollouts-mode-option ${mode === option.value ? "feature-rollouts-mode-option--selected" : ""}`}
+        >
+          <label className="feature-rollouts-mode-option-label">
+            <input
+              type="radio"
+              name="ai-search-rollout-mode"
+              value={option.value}
+              checked={mode === option.value}
+              onChange={() => onChange(option.value)}
+              disabled={saving}
+            />
+            <span className="feature-rollouts-mode-copy">
+              <span className="feature-rollouts-mode-label">{option.label}</span>
+              <span className="feature-rollouts-mode-description">{option.description}</span>
+            </span>
+          </label>
+          {mode === option.value ? renderOptionContent?.(option.value) ?? null : null}
+        </div>
       ))}
     </div>
   </fieldset>

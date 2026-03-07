@@ -1,12 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import type { ApiClient } from "../../../common/api-client/api-client";
-import type {
-  FeatureRolloutConfig,
-  FeatureRolloutMode,
-  FeatureRolloutSearchUser,
-} from "../../../common/types/feature-rollout";
+import type { FeatureRolloutConfig, FeatureRolloutMode, FeatureRolloutSearchUser } from "../../../common/types/feature-rollout";
 import { Utils } from "../../../common/utils";
+import FeatureRolloutAllowlistManager from "./FeatureRolloutAllowlistManager";
 import FeatureRolloutModeSelector from "./FeatureRolloutModeSelector";
+import FeatureRolloutOverview from "./FeatureRolloutOverview";
+import FeatureRolloutPanel from "./FeatureRolloutPanel";
 
 const FEATURE_KEY = "ai-grant-search";
 
@@ -30,8 +29,8 @@ const FeatureRolloutsTab: React.FC<FeatureRolloutsTabProps> = ({
   const [config, setConfig] = useState<FeatureRolloutConfig>(emptyConfig);
   const [loading, setLoading] = useState(true);
   const [savingToggle, setSavingToggle] = useState(false);
+  const [draftMode, setDraftMode] = useState<FeatureRolloutMode>(emptyConfig.mode);
   const [searchQuery, setSearchQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState<"" | "admin" | "developer">("");
   const [searchingUsers, setSearchingUsers] = useState(false);
   const [searchResults, setSearchResults] = useState<FeatureRolloutSearchUser[]>([]);
   const [hasSearchedUsers, setHasSearchedUsers] = useState(false);
@@ -54,15 +53,15 @@ const FeatureRolloutsTab: React.FC<FeatureRolloutsTabProps> = ({
     void loadConfig();
   }, [loadConfig]);
 
+  useEffect(() => {
+    setDraftMode(config.mode);
+  }, [config.mode]);
+
   const handleModeChange = useCallback(async (mode: FeatureRolloutMode) => {
     try {
       setSavingToggle(true);
-      const nextConfig = await apiClient.userManagement.updateFeatureRollout(FEATURE_KEY, mode);
-      setConfig((current) => ({
-        ...current,
-        ...nextConfig,
-        users: current.users,
-      }));
+      await apiClient.userManagement.updateFeatureRollout(FEATURE_KEY, mode);
+      await loadConfig();
       addNotification(
         "success",
         mode === "all"
@@ -77,15 +76,14 @@ const FeatureRolloutsTab: React.FC<FeatureRolloutsTabProps> = ({
     } finally {
       setSavingToggle(false);
     }
-  }, [apiClient, addNotification]);
+  }, [apiClient, addNotification, loadConfig]);
 
   const handleSearchUsers = useCallback(async () => {
     try {
       setSearchingUsers(true);
       const response = await apiClient.userManagement.searchFeatureRolloutUsers(
         FEATURE_KEY,
-        searchQuery,
-        roleFilter
+        searchQuery
       );
       setSearchResults(response.users);
       setHasSearchedUsers(true);
@@ -96,6 +94,12 @@ const FeatureRolloutsTab: React.FC<FeatureRolloutsTabProps> = ({
       setSearchingUsers(false);
     }
   }, [apiClient, addNotification, searchQuery]);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery("");
+    setSearchResults([]);
+    setHasSearchedUsers(false);
+  }, []);
 
   const syncSearchResult = useCallback((email: string, hasAccess: boolean) => {
     setSearchResults((current) =>
@@ -147,171 +151,68 @@ const FeatureRolloutsTab: React.FC<FeatureRolloutsTabProps> = ({
   );
 
   const allowlistedCount = config.users.length;
-  const sortedResults = useMemo(
-    () => [...searchResults].sort((a, b) => a.email.localeCompare(b.email)),
-    [searchResults]
-  );
-  const selectedRoleLabel = roleFilter === "admin" ? "Admin" : roleFilter === "developer" ? "Developer" : "User";
+  const updatedAtLabel = config.updatedAt ? Utils.formatTimestamp(config.updatedAt) : "never";
+  const hasPendingModeChange = draftMode !== config.mode;
 
   if (loading) {
-    return <div className="feature-rollouts-panel">Loading feature rollouts...</div>;
+    return (
+      <div className="feature-rollouts-panel" role="status" aria-busy="true">
+        Loading feature rollouts...
+      </div>
+    );
   }
 
   return (
     <div className="feature-rollouts-panel">
-      <div className="feature-rollouts-card">
-        <div className="feature-rollouts-card__header">
-          <div>
-            <h2>AI Search Beta</h2>
-            <p>
-              Control who sees the AI-powered grant search. Users outside this rollout
-              get the old normal search experience with no AI-specific UI or API calls.
-            </p>
-            <p className="feature-rollouts-process">
-              Select one mode: all users, allowlisted users only, or disabled for all. Allowlist entries only matter in the allowlisted mode.
-            </p>
-          </div>
-        </div>
-
-        <FeatureRolloutModeSelector
-          mode={config.mode}
-          saving={savingToggle}
-          onChange={(mode) => void handleModeChange(mode)}
-        />
-
-        <div className="feature-rollouts-meta">
-          <span>{allowlistedCount} allowlisted user{allowlistedCount === 1 ? "" : "s"}</span>
-          <span>
-            Last updated{" "}
-            {config.updatedAt ? Utils.formatTimestamp(config.updatedAt) : "never"}
-            {config.updatedBy ? ` by ${config.updatedBy}` : ""}
-          </span>
-        </div>
-      </div>
-
-      {config.mode === "allowlisted" ? (
-        <div className="feature-rollouts-card">
-          <section className="feature-rollouts-section">
-            <div className="feature-rollouts-section-header">
-              <h3>Allowlisted Users</h3>
-              <p>Manage the users who should see AI search in allowlisted mode.</p>
-            </div>
-            {config.users.length === 0 ? (
-              <p className="feature-rollouts-empty">No users have AI search beta access yet.</p>
-            ) : (
-              <div className="feature-rollouts-list">
-                {config.users.map((user) => (
-                  <div key={user.email} className="feature-rollouts-list-item">
-                    <div>
-                      <div className="feature-rollouts-email">{user.email}</div>
-                      <div className="feature-rollouts-detail">
-                        Added {user.grantedAt ? Utils.formatTimestamp(user.grantedAt) : "recently"}
-                        {user.grantedBy ? ` by ${user.grantedBy}` : ""}
-                      </div>
-                    </div>
-                    <button
-                      className="feature-rollouts-secondary-button"
-                      onClick={() => handleRevokeAccess(user.email)}
-                      disabled={pendingEmail === user.email}
-                    >
-                      {pendingEmail === user.email ? "Removing..." : "Remove"}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section className="feature-rollouts-section">
-            <div className="feature-rollouts-section-header">
-              <h3>Search Users</h3>
-              <p>Search Cognito users by email and filter by role before allowlisting them.</p>
-            </div>
-
-            <div className="feature-rollouts-search">
-              <div className="feature-rollouts-search-field">
-                <label htmlFor="feature-rollouts-user-search" className="feature-rollouts-search-label">
-                  User email search
-                </label>
-                <input
-                  id="feature-rollouts-user-search"
-                  type="text"
-                  className="feature-rollouts-search-input"
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Search by email"
-                />
-              </div>
-              <div className="feature-rollouts-search-field feature-rollouts-search-field--role">
-                <label htmlFor="feature-rollouts-role-filter" className="feature-rollouts-search-label">
-                  Role filter
-                </label>
-                <select
-                  id="feature-rollouts-role-filter"
-                  className="feature-rollouts-search-input"
-                  value={roleFilter}
-                  onChange={(event) => setRoleFilter(event.target.value as "" | "admin" | "developer")}
-                >
-                  <option value="">User</option>
-                  <option value="admin">Admin</option>
-                  <option value="developer">Developer</option>
-                </select>
-              </div>
+      <FeatureRolloutPanel
+        eyebrow="Developer Controls"
+        title="AI Search Beta"
+        description="Control who sees the AI-powered grant search."
+        overview={
+          <FeatureRolloutOverview
+            mode={config.mode}
+            allowlistedCount={allowlistedCount}
+            updatedAtLabel={updatedAtLabel}
+            updatedByLabel={config.updatedBy}
+          />
+        }
+        controls={
+          <div className="feature-rollouts-controls">
+            <FeatureRolloutModeSelector
+              mode={draftMode}
+              saving={savingToggle}
+              onChange={setDraftMode}
+              renderOptionContent={(mode) =>
+                mode === "allowlisted" ? (
+                  <FeatureRolloutAllowlistManager
+                    users={config.users}
+                    searchQuery={searchQuery}
+                    searchingUsers={searchingUsers}
+                    searchResults={searchResults}
+                    hasSearchedUsers={hasSearchedUsers}
+                    pendingEmail={pendingEmail}
+                    onSearchQueryChange={setSearchQuery}
+                    onSearchUsers={() => void handleSearchUsers()}
+                    onClearSearch={handleClearSearch}
+                    onGrantAccess={(email) => void handleGrantAccess(email)}
+                    onRevokeAccess={(email) => void handleRevokeAccess(email)}
+                  />
+                ) : null
+              }
+            />
+            <div className="feature-rollouts-actions">
               <button
                 className="feature-rollouts-primary-button"
-                onClick={handleSearchUsers}
-                disabled={searchingUsers}
+                onClick={() => void handleModeChange(draftMode)}
+                disabled={!hasPendingModeChange || savingToggle}
                 type="button"
               >
-                {searchingUsers ? "Searching..." : "Search"}
+                {savingToggle ? "Saving..." : "Save changes"}
               </button>
             </div>
-
-            {sortedResults.length === 0 ? (
-              hasSearchedUsers ? (
-                <p className="feature-rollouts-empty">
-                  No {selectedRoleLabel.toLowerCase()} users found for this search.
-                </p>
-              ) : (
-                <p className="feature-rollouts-empty">
-                  Search for {selectedRoleLabel.toLowerCase()} users to grant or revoke AI search beta access.
-                </p>
-              )
-            ) : (
-              <div className="feature-rollouts-list">
-                {sortedResults.map((user) => (
-                  <div key={user.email} className="feature-rollouts-list-item">
-                    <div>
-                      <div className="feature-rollouts-email">{user.email}</div>
-                      <div className="feature-rollouts-detail">
-                        {user.status}
-                        {user.roles.length > 0 ? ` • Roles: ${user.roles.join(", ")}` : " • Role: User"}
-                      </div>
-                    </div>
-                    {user.hasAccess ? (
-                      <button
-                        className="feature-rollouts-secondary-button"
-                        onClick={() => handleRevokeAccess(user.email)}
-                        disabled={pendingEmail === user.email}
-                      >
-                        {pendingEmail === user.email ? "Removing..." : "Remove"}
-                      </button>
-                    ) : (
-                      <button
-                        className="feature-rollouts-primary-button"
-                        onClick={() => handleGrantAccess(user.email)}
-                        disabled={pendingEmail === user.email}
-                      >
-                        {pendingEmail === user.email ? "Granting..." : "Grant Access"}
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
-      ) : null}
+          </div>
+        }
+      />
     </div>
   );
 };

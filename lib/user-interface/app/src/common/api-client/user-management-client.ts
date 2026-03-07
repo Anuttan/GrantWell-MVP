@@ -94,7 +94,7 @@ export class UserManagementClient {
   async searchFeatureRolloutUsers(
     featureKey: string,
     query: string,
-    role: "" | "admin" | "developer"
+    role: "" | "admin" | "developer" = ""
   ): Promise<FeatureRolloutSearchResponse> {
     const headers = await this.getAuthHeaders();
     const url = new URL(`${this.baseUrl}/feature-rollouts/${encodeURIComponent(featureKey)}/users`);

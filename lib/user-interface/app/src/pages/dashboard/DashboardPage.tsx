@@ -244,15 +244,14 @@ const Dashboard: React.FC = () => {
   const filterCount = getActiveFilterCount();
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", width: "100%" }}>
-      <nav aria-label="Application navigation" style={{ flexShrink: 0 }}>
+    <div className="dashboard-shell">
+      <nav aria-label="Application navigation" className="dashboard-sidebar">
         <UnifiedNavigation />
       </nav>
-      <div className="dashboard-container" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <div className="dashboard-container dashboard-main-column">
         <nav aria-label="Breadcrumb" className="breadcrumb">
           <div className="breadcrumb-item">
-            <button className="breadcrumb-link" onClick={() => navigate("/")}
-              style={{ cursor: "pointer", background: "none", border: "none", padding: 0, color: "inherit", textDecoration: "underline" }}>
+            <button className="breadcrumb-link" onClick={() => navigate("/")}>
               Home
             </button>
           </div>
@@ -285,10 +284,10 @@ const Dashboard: React.FC = () => {
             </div>
           )}
 
+          <div className="visually-hidden" aria-live="polite">
+            {activeTab === "grants" ? "Grants tab selected" : "Developer rollouts tab selected"}
+          </div>
           <div className="tab-controls" role="tablist" aria-label="Dashboard sections">
-            <div className="visually-hidden" aria-live="polite">
-              {activeTab === "grants" ? "Grants tab selected" : "Developer rollouts tab selected"}
-            </div>
             <button
               id="dashboard-tab-grants"
               ref={grantsTabRef}
@@ -388,7 +387,7 @@ const Dashboard: React.FC = () => {
                 <Modal isOpen={scrapeConfirmModalOpen} onClose={() => setScrapeConfirmModalOpen(false)} title="Confirm Auto-Scrape">
                   <div className="modal-form">
                     <div className="delete-confirmation">
-                      <LuInfo size={32} className="warning-icon" style={{ color: "#14558F" }} />
+                      <LuInfo size={32} className="warning-icon dashboard-info-icon" />
                       <p>Are you sure you want to scrape NOFOs now?</p>
                     </div>
                     <p className="warning-text">This will search for new grants on grants.gov and add them to the system. This process may take a few minutes.</p>
